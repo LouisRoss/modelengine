@@ -1,0 +1,9 @@
+#!/bin/bash
+echo $(pwd)
+docker container run \
+-it \
+--rm \
+--name=modelengine \
+--mount type=bind,source="$(pwd)",target=/home/modelengine \
+louisross/modelengine:1.0 \
+bash

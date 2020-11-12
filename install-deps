@@ -1,0 +1,23 @@
+#!/bin/bash
+
+# Update to g++ 9.
+apt-get update
+apt-get install -y apt-utils
+apt-get install -y software-properties-common
+add-apt-repository -y ppa:ubuntu-toolchain-r/test
+apt-get update
+apt-get install -y gcc-9 g++-9
+update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 20 --slave /usr/bin/g++ g++ /usr/bin/g++-9
+apt-get install -y libtbb-dev
+
+# Install gtest/gmock from a snapshot of the googletest git repo.
+apt-get install -y cmake
+apt-get install -y git
+#cd /home/modelengine/googletest
+git clone https://github.com/google/googletest.git -b release-1.10.0
+cd googletest
+cmake CMakeLists.txt
+make clean
+make
+make install
+

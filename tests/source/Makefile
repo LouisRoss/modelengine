@@ -1,0 +1,31 @@
+IDIR=../../include
+ILDIR=../include
+IH5DIR=/usr/include/hdf5/serial/
+CC=g++
+CFLAGS=-I$(IDIR) -I$(ILDIR) -I$(IH5DIR) -pthread -std=c++17
+
+ODIR=obj
+LDIR=../../lib
+
+LIBS=-lgtest -lgtest_main -lgmock -ltbb
+
+
+_DEPS = ModelEngineCommon.h ModelEngineContext.h ModelEngineContextOp.h ModelEngine.h ModelEngineThread.h IModelEnginePartitioner.h AdaptiveWidthPartitioner.h ConstantWidthPartitioner.h IModelEngineWaiter.h ConstantTickWaiter.h FirstWorkWaiter.h WorkerContext.h WorkerContextOp.h Worker.h WorkerThread.h ProcessCallback.h Log.h Recorder.h sdk/ModelRunner.h sdk/IModelInitializer.h sdk/ModelInitializer.h sdk/ModelInitializerProxy.h
+DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
+
+_LOCALDEPS = TestImplementation.h TestIdleImplementation.h TestOperation.h TestNode.h TestRecord.h
+LOCALDEPS = $(patsubst %,./%,$(_LOCALDEPS))
+
+_OBJ = ModelEngineTests.o WhenRunningAModel.o WhenPartitioningWork.o WhenDoingSupportFunctions.o
+OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
+
+$(ODIR)/%.o: %.cpp $(DEPS) $(LOCALDEPS)
+	$(CC) -c -o $@ $< $(CFLAGS)
+
+ModelEngineTests: $(OBJ)
+	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
+
+.PHONY: clean
+
+clean:
+	rm -f $(ODIR)/*.o *~ core $(IDIR)/*~
