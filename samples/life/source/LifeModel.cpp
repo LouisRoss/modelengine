@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string>
+#include <vector>
 #include <iostream>
 #include <memory>
 #include <chrono>
@@ -40,33 +41,14 @@ using embeddedpenguins::life::infrastructure::KeyListener;
 //
 std::string cls("\033[2J\033[H");
 bool displayOn = true;
+unsigned long int width { 100 };
+unsigned long int height { 100 };
+unsigned long int centerWidth {};
+unsigned long int centerHeight {};
 
 char PrintAndListenForQuit(ModelRunner<LifeNode, LifeOperation, LifeImplementation, LifeRecord>& modelRunner);
 void PrintLifeScan(ModelRunner<LifeNode, LifeOperation, LifeImplementation, LifeRecord>& modelRunner);
 void ParseArguments(int argc, char* argv[]);
-
-void PrintCellSurround(const vector<LifeNode>& model, unsigned short int cellIndex)
-{
-#if false
-    for (auto i = 0; i < 50 * 25; i++)
-    {
-        cout << "Neuron " << i << " synapses:";
-
-        auto& neuron = model[i];
-        for (auto connection : neuron.PostsynapticConnections)
-        {
-            cout << " " << connection.PostsynapticNeuron << "/" << connection.Synapse;
-        }
-        cout << '\n';
-    }
-#endif
-}
-
-void TestLife()
-{
-    constexpr const char* configurationFilePath = "/home/louis/source/bmtk/workspace/chapter04/sim_ch04/simulation_config.json";
-
-}
 
 ///////////////////////////////////////////////////////////////////////////
 //Main program entry.
@@ -74,10 +56,20 @@ void TestLife()
 //
 int main(int argc, char* argv[])
 {
-    //TestLife();
-
     ParseArguments(argc, argv);
     ModelRunner<LifeNode, LifeOperation, LifeImplementation, LifeRecord> modelRunner(argc, argv);
+
+    auto& configuration = modelRunner.Configuration();
+    auto dimensionElement = configuration["Model"]["Dimensions"];
+    if (dimensionElement.is_array())
+    {
+        auto dimensionArray = dimensionElement.get<vector<int>>();
+        width = dimensionArray[0];
+        height = dimensionArray[1];
+    }
+    centerWidth = width / 2;
+    centerHeight = height / 2;
+
     if (!modelRunner.Run())
     {
         cout << "Cannot run model, stopping\n";
@@ -92,15 +84,62 @@ int main(int argc, char* argv[])
 
 char PrintAndListenForQuit(ModelRunner<LifeNode, LifeOperation, LifeImplementation, LifeRecord>& modelRunner)
 {
-    char c;
+    constexpr char KEY_UP = 'A';
+    constexpr char KEY_DOWN = 'B';
+    constexpr char KEY_LEFT = 'D';
+    constexpr char KEY_RIGHT = 'C';
+
+    char c {' '};
     {
-        auto listener = KeyListener();
+        KeyListener listener;
 
         bool quit {false};
         while (!quit)
         {
             if (displayOn) PrintLifeScan(modelRunner);
-            quit = listener.Listen(50'000, c);
+            auto gotChar = listener.Listen(50'000, c);
+            if (gotChar)
+            {
+                if (c == '[')
+                {
+                    listener.Listen(50, c);
+                    switch (c)
+                    {
+                        case KEY_UP:
+                            centerHeight--;
+                            break;
+
+                        case KEY_DOWN:
+                            centerHeight++;
+                            break;
+
+                        case KEY_LEFT:
+                            centerWidth--;
+                            break;
+
+                        case KEY_RIGHT:
+                            centerWidth++;
+                            break;
+
+                        default:
+                            break;
+                    }
+                }
+                else
+                {
+                    switch (c)
+                    {
+                        case 'q':
+                        case 'Q':
+                            quit = true;
+                            break;
+
+                        default:
+                            break;
+                    }
+                }
+                
+            }
         }
     }
 
@@ -110,23 +149,31 @@ char PrintAndListenForQuit(ModelRunner<LifeNode, LifeOperation, LifeImplementati
 
 void PrintLifeScan(ModelRunner<LifeNode, LifeOperation, LifeImplementation, LifeRecord>& modelRunner)
 {
+    constexpr int windowWidth = 100;
+    constexpr int windowHeight = 30;
+
     cout << cls;
 
     auto node = begin(modelRunner.GetModel());
-    std::advance(node, ((1000 * 1000 / 2) - (1000 * 20) + (1000 / 2 - 25)));
-    for (auto high = 25; high; --high)
+    std::advance(node, ((width * (centerHeight - (windowHeight / 2))) + centerWidth - (windowWidth / 2)));
+    for (auto high = windowHeight; high; --high)
     {
-        for (auto wide = 50; wide; --wide)
+        for (auto wide = windowWidth; wide; --wide)
         {
             cout << (node->Alive ? "*" : " ");
             node++;
         }
         cout << '\n';
 
-        std::advance(node, 1000 - 50);
+        std::advance(node, width - windowWidth);
+        if (node >= end(modelRunner.GetModel())) node = begin(modelRunner.GetModel());
     }
 
-    cout << "Iterations: " << modelRunner.GetModelEngine().GetIterations() << "  Total work: " << modelRunner.GetModelEngine().GetTotalWork() << "                 \n";
+    cout
+        << "(" << centerWidth << "," << centerHeight << ") "
+        << "Iterations: " << modelRunner.GetModelEngine().GetIterations() 
+        << "  Total work: " << modelRunner.GetModelEngine().GetTotalWork() 
+        << "                 \n";
 }
 
 void ParseArguments(int argc, char* argv[])

@@ -45,6 +45,10 @@ namespace embeddedpenguins::modelengine::sdk
 
     public:
         ModelEngine<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, RECORDTYPE>& GetModelEngine() { return *modelEngine_.get(); }
+        const json& Control() const { return control_; }
+        const json& Configuration() const { return configuration_; }
+        const json& Monitor() const { return monitor_; }
+        const json& Settings() const { return settings_; }
         vector<NODETYPE>& GetModel() { return model_; }
 
     public:
