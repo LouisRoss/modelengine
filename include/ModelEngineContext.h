@@ -8,6 +8,8 @@
 #include <chrono>
 #include <condition_variable>
 
+#include "nlohmann/json.hpp"
+
 #include "Worker.h"
 #include "WorkerContext.h"
 #include "Log.h"
@@ -21,6 +23,9 @@ namespace embeddedpenguins::modelengine
     using std::vector;
     using std::unique_ptr;
     using std::chrono::microseconds;
+
+    using nlohmann::json;
+
     using embeddedpenguins::modelengine::threads::Worker;
     using embeddedpenguins::modelengine::threads::WorkerContext;
 
@@ -28,11 +33,12 @@ namespace embeddedpenguins::modelengine
     struct ModelEngineContext
     {
         atomic<bool> Run { false };
-        bool Quit{false};
+        bool Quit { false };
         mutex Mutex;
         condition_variable Cv;
         mutex PartitioningMutex;
 
+        json Configuration {};
         Log Logger {};
         LogLevel LoggingLevel { LogLevel::Status };
         string LogFile {"ModelEngine.log"};

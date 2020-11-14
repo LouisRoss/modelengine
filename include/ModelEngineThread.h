@@ -6,13 +6,13 @@
 #include <vector>
 #include <thread>
 #include <limits>
-#include "Worker.h"
 
 #include "ModelEngineCommon.h"
 #include "ModelEngineContextOp.h"
 #include "AdaptiveWidthPartitioner.h"
 #include "ConstantWidthPartitioner.h"
 #include "ConstantTickWaiter.h"
+#include "Worker.h"
 #include "Log.h"
 #include "Recorder.h"
 
@@ -29,6 +29,7 @@ namespace embeddedpenguins::modelengine
     using std::numeric_limits;
     using std::cout;
     using std::cerr;
+
     using embeddedpenguins::modelengine::threads::Worker;
     using embeddedpenguins::modelengine::threads::WorkCode;
 

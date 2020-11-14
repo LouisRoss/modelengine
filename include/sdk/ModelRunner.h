@@ -240,13 +240,14 @@ namespace embeddedpenguins::modelengine::sdk
 
             modelEngine_ = make_unique<ModelEngine<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, RECORDTYPE>>(
                 model_, 
-                microseconds(ticks));
+                microseconds(ticks),
+                configuration_);
 
             modelEngine_->SetRecordFile(ComposeRecordPath());
             modelEngine_->Run();
 
             // After the model is running, let the initializer inject a startup work load.
-            initializer.InjectSignal(*modelEngine_.get());
+            modelEngine_->InitializeModel(initializer);
 
             return true;
         }

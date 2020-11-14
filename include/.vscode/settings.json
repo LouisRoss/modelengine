@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "chrono": "cpp",
-        "iosfwd": "cpp"
+        "iosfwd": "cpp",
+        "condition_variable": "cpp"
     }
 }

@@ -1,1 +1,5 @@
 tests/source/obj/*.o
+samples/life/bin/ModelEngine.log
+samples/life/bin/*.so
+samples/life/bin/LifeModel
+samples/life/source/obj/*.o

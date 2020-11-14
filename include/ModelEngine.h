@@ -2,8 +2,12 @@
 
 #include <thread>
 #include <chrono>
+
+#include "nlohmann/json.hpp"
+
 #include "ModelEngineContextOp.h"
 #include "ModelEngineThread.h"
+#include "sdk/ModelInitializerProxy.h"
 #include "ProcessCallback.h"
 
 namespace embeddedpenguins::modelengine
@@ -14,7 +18,11 @@ namespace embeddedpenguins::modelengine
     using std::chrono::nanoseconds;
     using std::chrono::high_resolution_clock;
     using time_point = std::chrono::high_resolution_clock::time_point;
+
+    using nlohmann::json;
+
     using embeddedpenguins::modelengine::threads::ProcessCallback;
+    using embeddedpenguins::modelengine::sdk::ModelInitializerProxy;
 
     template<class NODETYPE, class OPERATORTYPE, class IMPLEMENTATIONTYPE, class RECORDTYPE>
     class ModelEngine
@@ -37,11 +45,12 @@ namespace embeddedpenguins::modelengine
     public:
         ModelEngine() = delete;
 
-        ModelEngine(vector<NODETYPE>& model, microseconds enginePeriod, int segmentCount = 0) :
+        ModelEngine(vector<NODETYPE>& model, microseconds enginePeriod, const json& configuration, int segmentCount = 0) :
             contextOp_(context_)
         {
             context_.WorkerCount = segmentCount;
             context_.EnginePeriod = enginePeriod;
+            context_.Configuration = configuration;
 
             CreateWorkerThread(model);
         }
@@ -63,10 +72,12 @@ namespace embeddedpenguins::modelengine
                 std::this_thread::yield();
         }
 
-        void QueueWork(const OPERATORTYPE& work, int tickDelay = 0)
+        void InitializeModel(ModelInitializerProxy<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, RECORDTYPE>& initializer)
         {
             lock_guard<mutex> lock(context_.PartitioningMutex);
-            ProcessCallback(context_.ExternalWorkSource)(work, tickDelay);
+            ProcessCallback callback(context_.ExternalWorkSource);
+            
+            initializer.InjectSignal(callback);
         }
 
         void Quit()

@@ -5,16 +5,16 @@
 #include <iostream>
 #include <dlfcn.h>
 
-#include "IModelInitializer.h"
-#include "ModelEngine.h"
 #include "nlohmann/json.hpp"
+
+#include "IModelInitializer.h"
 
 namespace embeddedpenguins::modelengine::sdk
 {
     using std::string;
     using std::vector;
     using std::cout;
-    using embeddedpenguins::modelengine::ModelEngine;
+
     using nlohmann::json;
 
     //
@@ -72,10 +72,10 @@ namespace embeddedpenguins::modelengine::sdk
                 initializer_->Initialize();
         }
 
-        virtual void InjectSignal(ModelEngine<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, RECORDTYPE>& modelEngine) override
+        virtual void InjectSignal(ProcessCallback<OPERATORTYPE, RECORDTYPE>& callback) override
         {
             if (initializer_ && valid_)
-                initializer_->InjectSignal(modelEngine);
+                initializer_->InjectSignal(callback);
         }
 
     private:

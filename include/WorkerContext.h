@@ -45,6 +45,12 @@ namespace embeddedpenguins::modelengine::threads
         vector<WorkItem<OPERATORTYPE>> WorkForThread;
         vector<WorkItem<OPERATORTYPE>> WorkForNextThread;
 
-        WorkerContext(unsigned long long int& iterations, microseconds& enginePeriod, LogLevel& loggingLevel) : Iterations(iterations), Record(iterations), EnginePeriod(enginePeriod), LoggingLevel(loggingLevel) { }
+        WorkerContext(unsigned long long int& iterations, microseconds& enginePeriod, LogLevel& loggingLevel) : 
+            Iterations(iterations), 
+            Record(iterations), 
+            EnginePeriod(enginePeriod), 
+            LoggingLevel(loggingLevel)
+        {
+        }
     };
 }

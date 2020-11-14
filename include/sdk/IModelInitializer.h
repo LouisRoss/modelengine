@@ -1,10 +1,10 @@
 #pragma once
 
-#include "ModelEngine.h"
+#include "ProcessCallback.h"
 
 namespace embeddedpenguins::modelengine::sdk
 {
-    using embeddedpenguins::modelengine::ModelEngine;
+    using embeddedpenguins::modelengine::threads::ProcessCallback;
 
     //
     // All model initializers must implement this interface, to allow
@@ -24,8 +24,8 @@ namespace embeddedpenguins::modelengine::sdk
 
         //
         // Called after the model is running, this optional method
-        // may dynamically inject work into the mordel engine as operators.
+        // may dynamically inject work into the modelengine as operators.
         //
-        virtual void InjectSignal(ModelEngine<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, RECORDTYPE>& modelEngine) { }
+        virtual void InjectSignal(ProcessCallback<OPERATORTYPE, RECORDTYPE>& callback) { }
     };
 }

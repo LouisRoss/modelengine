@@ -1,17 +1,21 @@
 #pragma once
 
+#include <thread>
+
+#include "nlohmann/json.hpp"
+
 #include "ModelEngineCommon.h"
 #include "WorkerContext.h"
 #include "WorkerThread.h"
 #include "Log.h"
-#include <thread>
-
 
 namespace embeddedpenguins::modelengine::threads
 {
     using std::thread;
     using std::unique_lock;
     using std::lock_guard;
+
+    using nlohmann::json;
 
     template<class NODETYPE, class OPERATORTYPE, class IMPLEMENTATIONTYPE, class RECORDTYPE>
     class Worker
@@ -27,7 +31,11 @@ namespace embeddedpenguins::modelengine::threads
     public:
         Worker() = delete;
 
-        Worker(vector<NODETYPE>& model, int workerId, microseconds& enginePeriod, unsigned long long int segmentStart, unsigned long long int segmentEnd, unsigned long long int& iterations, LogLevel& loggingLevel) :
+        Worker(vector<NODETYPE>& model, int workerId, microseconds& enginePeriod, 
+                    const json& configuration, 
+                    unsigned long long int segmentStart, unsigned long long int segmentEnd, 
+                    unsigned long long int& iterations, 
+                    LogLevel& loggingLevel) :
             context_(iterations, enginePeriod, loggingLevel)
         {
             context_.Logger.SetId(workerId);
@@ -35,7 +43,7 @@ namespace embeddedpenguins::modelengine::threads
             context_.RangeBegin = segmentStart;
             context_.RangeEnd = segmentEnd;
 
-            workerThread_ = thread(IMPLEMENTATIONTYPE(workerId, model), std::ref(context_));
+            workerThread_ = thread(IMPLEMENTATIONTYPE(workerId, model, configuration), std::ref(context_));
         }
 
         void Scan(WorkCode code)
