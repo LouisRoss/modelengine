@@ -10,7 +10,7 @@ namespace embeddedpenguins::modelengine::sdk
     // All model initializers must implement this interface, to allow
     // interchangability between initializers.
     //
-    template<class NODETYPE, class OPERATORTYPE, class IMPLEMENTATIONTYPE, class RECORDTYPE>
+    template<class OPERATORTYPE, class RECORDTYPE>
     class IModelInitializer
     {
     public:

@@ -13,8 +13,8 @@ namespace embeddedpenguins::modelengine::sdk
     // Base class for all model initializers.  Since an initializer
     // must reference the model, this common behavior is captured here.
     //
-    template<class NODETYPE, class OPERATORTYPE, class IMPLEMENTATIONTYPE, class RECORDTYPE>
-    class ModelInitializer : public IModelInitializer<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, RECORDTYPE>
+    template<class NODETYPE, class OPERATORTYPE, class RECORDTYPE>
+    class ModelInitializer : public IModelInitializer<OPERATORTYPE, RECORDTYPE>
     {
     protected:
         vector<NODETYPE>& model_;

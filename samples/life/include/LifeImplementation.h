@@ -13,6 +13,8 @@
 #include "Recorder.h"
 #include "Log.h"
 
+#include "LifeCommon.h"
+#include "LifeSupport.h"
 #include "LifeOperation.h"
 #include "LifeNode.h"
 #include "LifeRecord.h"
@@ -22,10 +24,7 @@ namespace embeddedpenguins::life::infrastructure
 {
     using std::cout;
     using std::vector;
-    using std::begin;
-    using std::end;
     using std::unique;
-    using std::distance;
 
     using nlohmann::json;
 
@@ -192,7 +191,7 @@ namespace embeddedpenguins::life::infrastructure
                 lifeNode.AliveNextTick = aliveNextTick;
 
 #ifndef NOLOG
-                log.Logger() << "Cell " << cellIndex << " evaluating to " << (lifeNode.AliveNextTick ? "alive" : "dead") << " for next propagation" << '\n';
+                log.Logger() << "Cell " << cellIndex << " changing evaluation to " << (lifeNode.AliveNextTick ? "alive" : "dead") << " for next propagation" << '\n';
                 log.Logit();
 #endif
                 callback(LifeOperation(cellIndex, Operation::Propagate));
@@ -218,28 +217,20 @@ namespace embeddedpenguins::life::infrastructure
             lifeNode.Alive = lifeNode.AliveNextTick;
             record.Record(LifeRecord(LifeRecordType::Propagate, cellIndex, lifeNode));
 
-            SignalAllSurroundingCellsToEvaluate(log, record, cellIndex, callback);
+            LifeSupport(width_, height_).SignalAllSurroundingCellsToEvaluate(cellIndex, callback);
         }
 
-        void SignalAllSurroundingCellsToEvaluate(Log& log, Recorder<LifeRecord>& record, 
-            unsigned long long int cellIndex,
-            ProcessCallback<LifeOperation, LifeRecord>& callback)
-        {
-            for (auto rowStep = cellIndex - width_; rowStep < cellIndex + width_ + 1; rowStep += width_)
-            {
-                for (auto step = rowStep - 1; step < rowStep + 2; step++)
-                {
-                    callback(LifeOperation(cellIndex, Operation::Evaluate));
-                }
-            }
-        }
-
+        //
+        // For all possible state patterns of a grid of nine cells, generate the
+        // next life state of the center cell.
+        // Store all rules in the array.
+        //
         void GenerateRulesOfLife()
         {
             for (unsigned short int pattern = 0; pattern < 512; pattern++)
             {
                 auto centerAlive = (pattern & 0x10) != 0;
-                auto surroundingCount = GetSurroundingCount(pattern & ~0x10);
+                auto surroundingCount = LifeSupport(width_, height_).GetSurroundingCount(pattern & ~0x10);
 
                 auto centerResult { false };
                 if (surroundingCount < 2 || surroundingCount > 3) centerResult = false;
@@ -250,19 +241,11 @@ namespace embeddedpenguins::life::infrastructure
             }
         }
 
-        unsigned short int GetSurroundingCount(unsigned short int surround)
-        {
-            // Brian Kernigan says this will count the surrounding bits, so I trust him :)
-            unsigned short int count = 0; 
-            while (surround != 0)
-            { 
-                surround &= (surround - 1); 
-                count++; 
-            } 
-
-            return count;
-        }
-
+        //
+        // Given a cell index in the model, apply the rules table to that
+        // cell (taking into account the surrounding eight cells), and
+        // return the life state of that cell for the next tick.
+        //
         bool ApplyRulesOfLife(unsigned long long int cellIndex)
         {
             unsigned short int surround {};

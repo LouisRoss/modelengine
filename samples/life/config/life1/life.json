@@ -1,7 +1,7 @@
 {
     "Model":
     {
-        "ModelTicks": 5000000,
+        "ModelTicks": 10000,
         "Dimensions": [1000, 1000]
     },
     "Execution":

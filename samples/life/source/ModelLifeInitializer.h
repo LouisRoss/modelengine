@@ -26,11 +26,13 @@ namespace embeddedpenguins::life::infrastructure
     using embeddedpenguins::modelengine::ModelEngine;
     using embeddedpenguins::modelengine::sdk::ModelInitializer;
 
-    class ModelLifeInitializer : public ModelInitializer<LifeNode, LifeOperation, LifeImplementation, LifeRecord>
+    class ModelLifeInitializer : public ModelInitializer<LifeNode, LifeOperation, LifeRecord>
     {
         unsigned long int width_ { 100 };
         unsigned long int height_ { 100 };
         unsigned long long int maxIndex_ { };
+
+        vector<unsigned long long int> initializedCells_ { };
 
     public:
         ModelLifeInitializer(vector<LifeNode>& model, json& configuration);

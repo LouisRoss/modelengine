@@ -72,7 +72,7 @@ namespace embeddedpenguins::modelengine
                 std::this_thread::yield();
         }
 
-        void InitializeModel(ModelInitializerProxy<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, RECORDTYPE>& initializer)
+        void InitializeModel(ModelInitializerProxy<NODETYPE, OPERATORTYPE, RECORDTYPE>& initializer)
         {
             lock_guard<mutex> lock(context_.PartitioningMutex);
             ProcessCallback callback(context_.ExternalWorkSource);

@@ -13,7 +13,7 @@ LIBS= -ldl -ltbb
 _DEPS = ModelEngineCommon.h ModelEngineContext.h ModelEngineContextOp.h ModelEngine.h ModelEngineThread.h IModelEnginePartitioner.h AdaptiveWidthPartitioner.h ConstantWidthPartitioner.h IModelEngineWaiter.h ConstantTickWaiter.h FirstWorkWaiter.h WorkerContext.h WorkerContextOp.h Worker.h WorkerThread.h ProcessCallback.h Log.h Recorder.h sdk/ModelRunner.h sdk/IModelInitializer.h sdk/ModelInitializer.h sdk/ModelInitializerProxy.h
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
-_LIFEDEPS = LifeCommon.h LifeImplementation.h LifeNode.h LifeOperation.h LifeRecord.h
+_LIFEDEPS = LifeCommon.h LifeSupport.h LifeImplementation.h LifeNode.h LifeOperation.h LifeRecord.h
 LIFEDEPS = $(patsubst %,$(ILDIR)/%,$(_LIFEDEPS))
 
 _LOCALDEPS = KeyListener.h

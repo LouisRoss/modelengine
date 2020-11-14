@@ -226,7 +226,7 @@ namespace embeddedpenguins::modelengine::sdk
         bool RunModelEngine()
         {
             // Create the proxy with a two-step ctor-create sequence.
-            ModelInitializerProxy<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, RECORDTYPE> initializer(modelInitializerLocation_);
+            ModelInitializerProxy<NODETYPE, OPERATORTYPE, RECORDTYPE> initializer(modelInitializerLocation_);
             initializer.CreateProxy(model_, configuration_);
 
             // Let the initializer initialize the model's static state.
