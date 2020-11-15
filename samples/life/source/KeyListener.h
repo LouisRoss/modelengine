@@ -40,6 +40,12 @@ namespace embeddedpenguins::life::infrastructure
             if( res > 0 )
             {
                 read( fileno( stdin ), &c, 1 );
+
+                // Arrow keys are a two-key sequence, discard first.
+                if (res > 1 && c == '[')
+                {
+                    read( fileno( stdin ), &c, 1 );
+                }
             }
 
             return res > 0;
@@ -50,41 +56,4 @@ namespace embeddedpenguins::life::infrastructure
             tcsetattr(fileno( stdin ), TCSANOW, &oldSettings_);
         }
     };
-}
-
-int getchar(char& c)
-{
-    struct termios oldSettings, newSettings;
-
-    tcgetattr( fileno( stdin ), &oldSettings );
-    newSettings = oldSettings;
-    newSettings.c_lflag &= (~ICANON & ~ECHO);
-    tcsetattr( fileno( stdin ), TCSANOW, &newSettings );    
-
-    fd_set set;
-    struct timeval tv;
-
-    tv.tv_sec = 0;
-    tv.tv_usec = 50'000;
-
-    FD_ZERO( &set );
-    FD_SET( fileno( stdin ), &set );
-
-    int res = select( fileno( stdin )+1, &set, NULL, NULL, &tv );
-
-    if( res > 0 )
-    {
-        read( fileno( stdin ), &c, 1 );
-    }
-    else if( res < 0 )
-    {
-        //perror( "select error" );
-    }
-    else
-    {
-        //printf( "Select timeout\n" );
-    }
-
-    tcsetattr( fileno( stdin ), TCSANOW, &oldSettings );
-    return res;
 }

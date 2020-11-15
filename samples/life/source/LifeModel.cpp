@@ -24,6 +24,7 @@ using std::chrono::system_clock;
 using std::chrono::high_resolution_clock;
 using std::chrono::duration_cast;
 using std::chrono::milliseconds;
+using std::chrono::microseconds;
 using std::chrono::ceil;
 
 using nlohmann::json;
@@ -52,7 +53,7 @@ void ParseArguments(int argc, char* argv[]);
 
 ///////////////////////////////////////////////////////////////////////////
 //Main program entry.
-//Run the brain map.
+//Run the game of life model.
 //
 int main(int argc, char* argv[])
 {
@@ -100,45 +101,49 @@ char PrintAndListenForQuit(ModelRunner<LifeNode, LifeOperation, LifeImplementati
             auto gotChar = listener.Listen(50'000, c);
             if (gotChar)
             {
-                if (c == '[')
+                switch (c)
                 {
-                    listener.Listen(50, c);
-                    switch (c)
+                    case KEY_UP:
+                        centerHeight--;
+                        break;
+
+                    case KEY_DOWN:
+                        centerHeight++;
+                        break;
+
+                    case KEY_LEFT:
+                        centerWidth--;
+                        break;
+
+                    case KEY_RIGHT:
+                        centerWidth++;
+                        break;
+
+                    case '=':
+                    case '+':
                     {
-                        case KEY_UP:
-                            centerHeight--;
-                            break;
-
-                        case KEY_DOWN:
-                            centerHeight++;
-                            break;
-
-                        case KEY_LEFT:
-                            centerWidth--;
-                            break;
-
-                        case KEY_RIGHT:
-                            centerWidth++;
-                            break;
-
-                        default:
-                            break;
+                        auto newPeriod = modelRunner.EnginePeriod() / 10;
+                        if (newPeriod < microseconds(100)) newPeriod = microseconds(100);
+                        modelRunner.EnginePeriod() = newPeriod;
+                        break;
                     }
-                }
-                else
-                {
-                    switch (c)
+
+                    case '-':
                     {
-                        case 'q':
-                        case 'Q':
-                            quit = true;
-                            break;
-
-                        default:
-                            break;
+                        auto newPeriod = modelRunner.EnginePeriod() * 10;
+                        if (newPeriod > microseconds(10'000'000)) newPeriod = microseconds(10'000'000);
+                        modelRunner.EnginePeriod() = newPeriod;
+                        break;
                     }
+
+                    case 'q':
+                    case 'Q':
+                        quit = true;
+                        break;
+
+                    default:
+                        break;
                 }
-                
             }
         }
     }
@@ -171,9 +176,12 @@ void PrintLifeScan(ModelRunner<LifeNode, LifeOperation, LifeImplementation, Life
 
     cout
         << "(" << centerWidth << "," << centerHeight << ") "
+        << " Tick: " << modelRunner.EnginePeriod().count() << " us "
         << "Iterations: " << modelRunner.GetModelEngine().GetIterations() 
         << "  Total work: " << modelRunner.GetModelEngine().GetTotalWork() 
         << "                 \n";
+
+    cout << "Arrow keys to navigate       + and - keys control speed            q to quit\n";
 }
 
 void ParseArguments(int argc, char* argv[])

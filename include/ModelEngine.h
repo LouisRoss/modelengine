@@ -41,6 +41,8 @@ namespace embeddedpenguins::modelengine
         nanoseconds GetDuration() { return duration_; }
         void SetLogFile(const string& logfile) { context_.LogFile = logfile; }
         void SetRecordFile(const string& recordfile) { context_.RecordFile = recordfile; }
+        const microseconds EnginePeriod() const { return context_.EnginePeriod; }
+        microseconds& EnginePeriod() { return context_.EnginePeriod; }
 
     public:
         ModelEngine() = delete;

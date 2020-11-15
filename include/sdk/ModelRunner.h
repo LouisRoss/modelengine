@@ -49,6 +49,8 @@ namespace embeddedpenguins::modelengine::sdk
         const json& Configuration() const { return configuration_; }
         const json& Monitor() const { return monitor_; }
         const json& Settings() const { return settings_; }
+        const microseconds EnginePeriod() const { return modelEngine_->EnginePeriod(); }
+        microseconds& EnginePeriod() { return modelEngine_->EnginePeriod(); }
         vector<NODETYPE>& GetModel() { return model_; }
 
     public:
