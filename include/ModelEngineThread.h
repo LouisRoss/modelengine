@@ -33,6 +33,14 @@ namespace embeddedpenguins::modelengine
     using embeddedpenguins::modelengine::threads::Worker;
     using embeddedpenguins::modelengine::threads::WorkCode;
 
+    //
+    // The model engine does its work in this thread object.
+    // The main loop of this thread object runs a two-phase process where
+    // 1) this thread partitions existing work to the worker threads, and
+    // 2) the worker threads execute the work.
+    // The two phases do not run simultaneously, but use synchronization barriers
+    // to ensure the phases run serially.
+    //
     template<class NODETYPE, class OPERATORTYPE, class IMPLEMENTATIONTYPE, class RECORDTYPE>
     class ModelEngineThread
     {

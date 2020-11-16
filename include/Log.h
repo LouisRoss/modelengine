@@ -30,6 +30,13 @@ namespace embeddedpenguins::modelengine
         Diagnostic
     };
 
+    //
+    // A logger with minimal impact to real-time execution.
+    // Collect all log messages for a single thread, then merge
+    // and print them to a file only after execution is over.
+    // A possible future enhancement will pause occasionally to
+    // merge/print the log buffers and flush memory.
+    //
     class Log
     {
         int id_;

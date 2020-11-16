@@ -9,6 +9,7 @@ namespace embeddedpenguins::neuron::infrastructure::persistence
     using std::vector;
 
     //
+    // TODO: Use this interface for persistence of the current state of a model.
     //
     template<class NODETYPE>
     class IModelPersister

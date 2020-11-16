@@ -2,6 +2,10 @@
 
 namespace embeddedpenguins::modelengine
 {
+    //
+    // Work to be done by the worker threads is abstracted as
+    // a collection of instances of this class.
+    //
     template<class OPERATORTYPE>
     struct WorkItem
     {

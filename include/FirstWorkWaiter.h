@@ -5,6 +5,10 @@
 
 namespace embeddedpenguins::modelengine
 {
+    //
+    // Experimental waiter that will not run idle ticks.
+    // Not currently in use.
+    //
     template<class NODETYPE, class OPERATORTYPE, class IMPLEMENTATIONTYPE>
     class FirstWorkWaiter : public IModelEngineWaiter
     {

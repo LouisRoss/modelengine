@@ -26,9 +26,10 @@ namespace embeddedpenguins::modelengine
     using embeddedpenguins::modelengine::threads::WorkerContextOp;
 
     //
-    // AdaptiveWidthPartitioner.  For each scan, partition work to workers
-    // adapting the width of the sum of partitions to include only the active
-    // part of the model.
+    // AdaptiveWidthPartitioner.  For each scan, partition work to workers,
+    // by partitioning the work for the scan into contiguous memory 'stripes'.
+    // Each worker runs its own thread, and is allowed to write into model memory 
+    // within its 'stripe', but not to memory in other 'stripes'.
     //
     template<class NODETYPE, class OPERATORTYPE, class IMPLEMENTATIONTYPE, class RECORDTYPE>
     class AdaptiveWidthPartitioner : public IModelEnginePartitioner
@@ -38,12 +39,10 @@ namespace embeddedpenguins::modelengine
         // Expose some internal state to derived classes to allow for testing.
     protected:
         vector<WorkItem<OPERATORTYPE>> totalSourceWork_ {};
-        time_point lastCycleStartTime_;
 
     public:
         AdaptiveWidthPartitioner(ModelEngineContext<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, RECORDTYPE>& context) :
-            context_(context),
-            lastCycleStartTime_(high_resolution_clock::now())
+            context_(context)
         {
         }
 

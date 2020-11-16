@@ -11,6 +11,10 @@ namespace embeddedpenguins::modelengine::threads
 
     using embeddedpenguins::modelengine::WorkItem;
 
+    //
+    // Separate the executable code from the context carrier object so that the
+    // context carrier object may be passed around without exposing methods.
+    // 
     template<class OPERATORTYPE, class RECORDTYPE>
     class WorkerContextOp
     {

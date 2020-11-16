@@ -24,6 +24,13 @@ namespace embeddedpenguins::modelengine
     using embeddedpenguins::modelengine::threads::ProcessCallback;
     using embeddedpenguins::modelengine::sdk::ModelInitializerProxy;
 
+    //
+    // The top-level control engine for running a model.
+    // Create and run a single thread, which will create N worker objects, each
+    // with its own thread.  By default, N will be the number of hardware cores - 1
+    // so that between the model engine thread and the worker thread, all cores
+    // will be kept busy.
+    //
     template<class NODETYPE, class OPERATORTYPE, class IMPLEMENTATIONTYPE, class RECORDTYPE>
     class ModelEngine
     {

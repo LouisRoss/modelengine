@@ -29,6 +29,11 @@ namespace embeddedpenguins::modelengine
     using embeddedpenguins::modelengine::threads::Worker;
     using embeddedpenguins::modelengine::threads::WorkerContext;
 
+    //
+    // Carry the public information defining the model engine.
+    // This includes synchronization between the model engine and its thread;
+    // configuration and logging; all workers; and statistics about the run.
+    //
     template<class NODETYPE, class OPERATORTYPE, class IMPLEMENTATIONTYPE, class RECORDTYPE>
     struct ModelEngineContext
     {

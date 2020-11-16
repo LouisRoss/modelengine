@@ -1,6 +1,8 @@
 #include <memory>
 #include <chrono>
 
+#include "nlohmann/json.hpp"
+
 #include "gtest/gtest.h"
 #include "gmock/gmock.h"
 
@@ -22,6 +24,8 @@ namespace test::embeddedpenguins::modelengine::infrastructure
   using std::chrono::microseconds;
   using std::chrono::nanoseconds;
 
+  using nlohmann::json;
+
   using ::embeddedpenguins::modelengine::ModelEngine;
 
   class WhenRunningAModel : public ::testing::Test
@@ -31,6 +35,7 @@ namespace test::embeddedpenguins::modelengine::infrastructure
     unique_ptr<vector<TestNode>> model_ = make_unique<vector<TestNode>>(modelSize_);
     unique_ptr<ModelEngine<TestNode, TestOperation, TestImplementation, TestRecord>> modelEngine_ { };
     nanoseconds duration_ { std::chrono::nanoseconds::min() };
+    json configuration_ {};
 
     vector<TestNode>& GetModel() { return *model_; }
     ModelEngine<TestNode, TestOperation, TestImplementation, TestRecord>& GetModelEngine() { return *modelEngine_; }
@@ -101,7 +106,7 @@ namespace test::embeddedpenguins::modelengine::infrastructure
     RunStopModelEngine();
 
     // Assert
-    EXPECT_EQ(modelEngine_->GetWorkerCount(), 2);
+    EXPECT_EQ(modelEngine_->GetWorkerCount(), 7);
   }
 
   TEST_F(WhenRunningAModel, ModelEngineStoppedReturnsZeroIterations)
@@ -132,7 +137,7 @@ namespace test::embeddedpenguins::modelengine::infrastructure
   TEST_F(WhenRunningAModel, ModelEngineRunsWithIdleCycles)
   {
     // Arrange
-    ModelEngine<TestNode, TestOperation, TestIdleImplementation, TestRecord> modelEngine(*model_, microseconds(1'000));
+    ModelEngine<TestNode, TestOperation, TestIdleImplementation, TestRecord> modelEngine(*model_, microseconds(1'000), configuration_);
 
     // Act
     modelEngine.Run();

@@ -23,6 +23,12 @@ namespace embeddedpenguins::modelengine::threads
     using embeddedpenguins::modelengine::Recorder;
     using embeddedpenguins::modelengine::WorkItem;
 
+    //
+    // Carry the public information defining the worker.
+    // This consists primarily of synchronization between the worker and its thread.
+    // Some parameters such as iteration count and engine period are actually
+    // references to parameters in the ModelEngineContext.
+    //
     template<class OPERATORTYPE, class RECORDTYPE>
     struct WorkerContext
     {

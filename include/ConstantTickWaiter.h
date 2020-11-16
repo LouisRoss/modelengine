@@ -11,6 +11,12 @@ namespace embeddedpenguins::modelengine
     using time_point = std::chrono::high_resolution_clock::time_point;
     using std::chrono::microseconds;
 
+    //
+    // This waiter is typically used for models, and always waits until the
+    // next scheduled tick in time.  If a model execution runs longer than
+    // a tick time, this waiter will schedule the next run in a attempt to 
+    // catch up.
+    //
     template<class NODETYPE, class OPERATORTYPE, class IMPLEMENTATIONTYPE, class RECORDTYPE>
     class ConstantTickWaiter : public IModelEngineWaiter
     {

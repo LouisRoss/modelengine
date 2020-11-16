@@ -4,6 +4,9 @@
 #include <algorithm>
 #include <chrono>
 #include <iostream>
+
+#include "nlohmann/json.hpp"
+
 #include "WorkerThread.h"
 #include "WorkItem.h"
 #include "ProcessCallback.h"
@@ -14,17 +17,20 @@
 
 namespace test::embeddedpenguins::modelengine::infrastructure
 {
-    using ::embeddedpenguins::modelengine::threads::WorkerThread;
-    using ::embeddedpenguins::modelengine::threads::ProcessCallback;
-    using ::embeddedpenguins::modelengine::Log;
-    using ::embeddedpenguins::modelengine::Recorder;
-    using ::embeddedpenguins::modelengine::WorkItem;
     using std::vector;
     using std::pair;
     using std::for_each;
     using std::cout;
     using std::chrono::milliseconds;
     using time_point = std::chrono::high_resolution_clock::time_point;
+
+    using nlohmann::json;
+
+    using ::embeddedpenguins::modelengine::threads::WorkerThread;
+    using ::embeddedpenguins::modelengine::threads::ProcessCallback;
+    using ::embeddedpenguins::modelengine::Log;
+    using ::embeddedpenguins::modelengine::Recorder;
+    using ::embeddedpenguins::modelengine::WorkItem;
 
     // Note: the callback should be allowed to be declared something like
     // void (*callback)(const SpikingOperation&)
@@ -37,6 +43,7 @@ namespace test::embeddedpenguins::modelengine::infrastructure
     {
         int workerId_;
         vector<TestNode>& model_;
+        const json& configuration_;
 
     public:
         TestImplementation() = delete;
@@ -44,9 +51,10 @@ namespace test::embeddedpenguins::modelengine::infrastructure
         // Required constructor.
         // Allow the template library to pass in the model
         // for each worker thread that is created.
-        TestImplementation(int workerId, vector<TestNode>& model) :
+        TestImplementation(int workerId, vector<TestNode>& model, const json& configuration) :
             workerId_(workerId),
-            model_(model)
+            model_(model),
+            configuration_(configuration)
         {
             
         }

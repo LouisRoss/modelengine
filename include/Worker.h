@@ -17,6 +17,12 @@ namespace embeddedpenguins::modelengine::threads
 
     using nlohmann::json;
 
+    //
+    // One worker instance is created for each hardware thread
+    // except for the main thread reserved for the ModelEngine.
+    // The worker object uses synchronization objects in its context
+    // to control its worker thread.
+    //
     template<class NODETYPE, class OPERATORTYPE, class IMPLEMENTATIONTYPE, class RECORDTYPE>
     class Worker
     {

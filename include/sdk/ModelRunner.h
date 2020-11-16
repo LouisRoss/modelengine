@@ -26,6 +26,17 @@ namespace embeddedpenguins::modelengine::sdk
     using nlohmann::json;
     using embeddedpenguins::modelengine::ModelEngine;
 
+    //
+    // Wrap the most common startup and teardown sequences to run a model
+    // in a single class.  A typical application can just instantiate a 
+    // ModelRunner object and call its Run() method to start the model running.
+    // Call its Quit() method to make the model stop at the end of the next tick.
+    // Call its WaitForQuit() method to confirm that the model engine as stopped and
+    // cleaned up.
+    //
+    // When using the ModelRunner to run a model, it owns the model (a vector of NODETYPE),
+    // the model engine object, and all configuration defined for the model.
+    //
     template<class NODETYPE, class OPERATORTYPE, class IMPLEMENTATIONTYPE, class RECORDTYPE>
     class ModelRunner
     {

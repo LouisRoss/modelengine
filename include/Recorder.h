@@ -19,6 +19,13 @@ namespace embeddedpenguins::modelengine
     using Clock = std::chrono::high_resolution_clock;
     using std::ofstream;
 
+    //
+    // Allow recording of significant state changes with minimal impact 
+    // to real-time execution.  Collect all record messages for a single thread, 
+    // then merge and log them to a file only after execution is over.
+    // A possible future enhancement will pause occasionally to
+    // merge/log the record buffers and flush memory.
+    //
     template<class RECORDTYPE>
     class Recorder
     {

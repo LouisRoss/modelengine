@@ -15,6 +15,12 @@ namespace embeddedpenguins::modelengine::threads
 
     using embeddedpenguins::modelengine::WorkItem;
 
+    //
+    // An instance of this class can be created with the worker context,
+    // then passed to the client model code.  When the client code
+    // determines new work to be done, it simply passes the new work
+    // to the functor operator to become queued for future execution.
+    //
     template<class OPERATORTYPE, class RECORDTYPE>
     class ProcessCallback
     {

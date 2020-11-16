@@ -15,6 +15,10 @@ namespace embeddedpenguins::modelengine
     using std::make_unique;
     using time_point = std::chrono::high_resolution_clock::time_point;
 
+    //
+    // Separate the executable code from the context carrier object so that the
+    // context carrier object may be passed around without exposing methods.
+    // 
     template<class NODETYPE, class OPERATORTYPE, class IMPLEMENTATIONTYPE, class RECORDTYPE>
     class ModelEngineContextOp
     {
