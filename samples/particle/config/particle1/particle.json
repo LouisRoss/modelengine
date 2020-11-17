@@ -1,0 +1,20 @@
+{
+    "Model":
+    {
+        "ModelTicks": 50000,
+        "Dimensions": [1000, 1000]
+    },
+    "Execution":
+    {
+        "ModelExecutable": "./ParticleModel",
+        "ModelOptions": "",
+        "InitializerLocation": "./ParticleModelInitializer.so"
+    },
+    "PostProcessing":
+    {
+        "RecordLocation": "/media/louis/Seagate Expansion Drive/record/",
+        "RecordFile": "ModelEngineRecord.csv",
+        "CleanRecordFile": "CleanRecord.csv",
+        "ImageFile": "spikes.png"
+    }
+}

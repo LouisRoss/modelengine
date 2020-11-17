@@ -1,0 +1,4 @@
+{
+    "Configuration": "particle1/particle.json",
+    "Monitor": "particle1/center.json"
+}

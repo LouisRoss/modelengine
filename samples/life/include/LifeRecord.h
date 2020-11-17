@@ -20,7 +20,6 @@ namespace embeddedpenguins::life::infrastructure
     struct LifeRecordEvaluation
     {
         unsigned long long int LifeIndex { };
-        unsigned short Surrounding[8];
     };
 
     struct LifeRecord

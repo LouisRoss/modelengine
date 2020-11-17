@@ -3,3 +3,7 @@ samples/life/bin/*.log
 samples/life/bin/*.so
 samples/life/bin/LifeModel
 samples/life/source/obj/*.o
+samples/particle/bin/*.log
+samples/particle/bin/*.so
+samples/particle/bin/ParticleModel
+samples/particle/source/obj/*.o
