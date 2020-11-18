@@ -1,9 +1,13 @@
+#include <string>
+#include <ostream>
+
 #include "ParticleSupport.h"
 #include "ParticleModelInitializer.h"
 
 namespace embeddedpenguins::particle::infrastructure
 {
-    using std::vector;
+    using std::string;
+    using std::ostringstream;
 
     using embeddedpenguins::modelengine::sdk::IModelInitializer;
     
@@ -33,13 +37,15 @@ namespace embeddedpenguins::particle::infrastructure
         int verticalVector = -3;
         int horizontalVector = -3;
         int mass = 5;
-        int speed = -10;
+        int speed = 0;
 
         for (auto row = 0; row < height_; row += 8)
         {
             for (auto column = 0; column < width_; column += 8)
             {
-                support_.InitializeCell(model_, row, column, verticalVector, horizontalVector, mass, speed);
+                ostringstream nameStream;
+                nameStream << "P(" << std::setw(3) << std::setfill('0') << row << ',' << std::setw(3) << std::setfill('0') << column << ')';
+                support_.InitializeCell(model_, nameStream.str(), row, column, verticalVector, horizontalVector, mass, speed);
 
                 verticalVector++;
                 if (verticalVector > 3)
@@ -48,15 +54,16 @@ namespace embeddedpenguins::particle::infrastructure
                     horizontalVector++;
                     if (horizontalVector > 3) horizontalVector = -3;
                 }
+                if (verticalVector == 0 && horizontalVector == 0) verticalVector++;
                 speed++;
-                if (speed > 10) speed = -10;
+                if (speed > 9) speed = 0;
             }
         }
     }
 
     void ParticleModelInitializer::InjectSignal(ProcessCallback<ParticleOperation, ParticleRecord>& callback)
     {
-        support_.SignalInitialCells(callback);
+        support_.SignalInitialCells(model_, callback);
     }
 
     // the class factories

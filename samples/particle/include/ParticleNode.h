@@ -4,6 +4,7 @@ namespace embeddedpenguins::particle::infrastructure
 {
     struct ParticleNode
     {
+        char Name[20];
         int HorizontalVector { 0 };
         int VerticalVector { 0 };
         int Speed { 0 };

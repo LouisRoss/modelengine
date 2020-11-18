@@ -104,7 +104,7 @@ char PrintAndListenForQuit(ModelRunner<ParticleNode, ParticleOperation, Particle
                 switch (c)
                 {
                     case KEY_UP:
-                        centerHeight--;
+                        if (centerHeight > 0) centerHeight--;
                         break;
 
                     case KEY_DOWN:
@@ -112,7 +112,7 @@ char PrintAndListenForQuit(ModelRunner<ParticleNode, ParticleOperation, Particle
                         break;
 
                     case KEY_LEFT:
-                        centerWidth--;
+                        if (centerWidth > 0) centerWidth--;
                         break;
 
                     case KEY_RIGHT:
@@ -157,9 +157,17 @@ void PrintLifeScan(ModelRunner<ParticleNode, ParticleOperation, ParticleImplemen
     constexpr int windowWidth = 100;
     constexpr int windowHeight = 30;
 
+    auto occupancy = std::count_if(modelRunner.GetModel().begin(), modelRunner.GetModel().end(), 
+        [](const ParticleNode& node){ return node.Occupied; });
+
     cout << cls;
 
     auto node = begin(modelRunner.GetModel());
+    if (centerHeight < windowHeight / 2) centerHeight = windowHeight / 2;
+    if (centerHeight >= height - (windowHeight / 2)) centerHeight = height - (windowHeight / 2) - 1;
+    if (centerWidth < windowWidth / 2) centerWidth = windowWidth / 2;
+    if (centerWidth >= width - (windowWidth / 2)) centerWidth = width - (windowWidth / 2) - 1;
+
     std::advance(node, ((width * (centerHeight - (windowHeight / 2))) + centerWidth - (windowWidth / 2)));
     for (auto high = windowHeight; high; --high)
     {
@@ -175,7 +183,7 @@ void PrintLifeScan(ModelRunner<ParticleNode, ParticleOperation, ParticleImplemen
     }
 
     cout
-        << "(" << centerWidth << "," << centerHeight << ") "
+        <<  occupancy << ":(" << centerWidth << "," << centerHeight << ") "
         << " Tick: " << modelRunner.EnginePeriod().count() << " us "
         << "Iterations: " << modelRunner.GetModelEngine().GetIterations() 
         << "  Total work: " << modelRunner.GetModelEngine().GetTotalWork() 

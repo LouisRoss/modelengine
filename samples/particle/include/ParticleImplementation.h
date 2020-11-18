@@ -1,7 +1,10 @@
 #pragma once
 
 #include <iostream>
+#include <string>
+#include <cstring>
 #include <vector>
+#include <map>
 #include <algorithm>
 #include <math.h>
 
@@ -19,12 +22,19 @@
 #include "ParticleNode.h"
 #include "ParticleRecord.h"
 
-//#define NOLOG
+#define NOLOG
 namespace embeddedpenguins::particle::infrastructure
 {
     using std::cout;
+    using std::string;
+    using std::memset;
+    using std::memcpy;
     using std::vector;
+    using std::multimap;
     using std::unique;
+    using std::make_pair;
+    using std::make_tuple;
+    using std::tuple;
 
     using nlohmann::json;
 
@@ -45,7 +55,7 @@ namespace embeddedpenguins::particle::infrastructure
         unsigned long int width_ { 100 };
         unsigned long int height_ { 100 };
         unsigned long long int maxIndex_ { };
-
+        
     public:
         //
         // Recommended to not allow a default constructor.
@@ -102,19 +112,61 @@ namespace embeddedpenguins::particle::infrastructure
             ProcessCallback<ParticleOperation, ParticleRecord>& callback)
         {
             if (end - begin == 0) return;
-
-            // The work items tend to explode exponentially if we process duplicate work items.
-            // Here we reduce the work load to include exactly one instance of each index.
-            vector<WorkItem<ParticleOperation>> localWork(begin, end);
-            auto endIt = unique(localWork.begin(), localWork.end(), 
-                [](const WorkItem<ParticleOperation>& first, const WorkItem<ParticleOperation>& second)
-                {
-                    return first.Operator.Index == second.Operator.Index;
-                });
-
-            for (auto work = localWork.begin(); work != endIt; work++)
+#if false
+            // Put the Land operations into a multimap sorted by index.
+            multimap<unsigned long long int, ParticleOperation> clusteredWork {};
+            for (auto work = begin; work != end; work++)
             {
-                ProcessWorkItem(log, record, tickNow, work->Operator, callback);
+                if (work->Operator.Op == Operation::Land)
+                    clusteredWork.insert(make_pair(work->Operator.Index, work->Operator));
+            }
+
+            // Handle any collisions of Land operations by finding consecutive entries with the same index.
+            if (!clusteredWork.empty())
+            {
+                auto almostEnd = clusteredWork.end();
+                almostEnd--;
+                for (auto work = clusteredWork.begin(); work != clusteredWork.end(); work++)
+                {
+                    auto clustering { true };
+                    auto clusterFound { false };
+                    unsigned long long int clusterIndex {};
+                    vector<ParticleOperation> cluster {};
+                    while (work != almostEnd && clustering)
+                    {
+                        auto nextWork = work;
+                        nextWork++;
+                        if (work->first == nextWork->first)
+                        {
+                            clusterIndex = work->first;
+                            clusterFound = true;
+                            work++;
+
+                            cluster.push_back(work->second);
+                        }
+                        else
+                        {
+                            if (clusterFound) cluster.push_back(work->second);
+                            clustering = false;
+                        }
+                    }
+
+                    if (clusterFound)
+                    {
+                        ProcessCollision(log, record, clusterIndex, cluster, callback);
+                    }
+                    else
+                    {
+                        ProcessWorkItem(log, record, tickNow, work->second, callback);
+                    }
+                }
+            }
+#endif
+            // Handle the remaining non-Land operations normally.
+            for (auto work = begin; work != end; work++)
+            {
+                //if (work->Operator.Op != Operation::Land)
+                    ProcessWorkItem(log, record, tickNow, work->Operator, callback);
             }
         }
 
@@ -135,14 +187,15 @@ namespace embeddedpenguins::particle::infrastructure
             const ParticleOperation& work, 
             ProcessCallback<ParticleOperation, ParticleRecord>& callback)
         {
+            string particleName(work.Name);
             switch (work.Op)
             {
             case Operation::Propagate:
-                ProcessPropagation(log, record, work.Index, callback);
+                ProcessPropagation(log, record, particleName, work.Index, callback);
                 break;
 
             case Operation::Land:
-                ProcessLanding(log, record, work.Index, work.VerticalVector, work.HorizontalVector, work.Mass, work.Speed, callback);
+                ProcessLanding(log, record, work.Index, particleName, work.VerticalVector, work.HorizontalVector, work.Mass, work.Speed, callback);
                 break;
 
             default:
@@ -152,37 +205,102 @@ namespace embeddedpenguins::particle::infrastructure
 
         //
         //
+        void ProcessCollision(Log& log, Recorder<ParticleRecord>& record, 
+            unsigned long long int index, 
+            const vector<ParticleOperation>& cluster,
+            ProcessCallback<ParticleOperation, ParticleRecord>& callback)
+        {
+            log.Logger() << "Collision of " << cluster.size() << " nodes at index " << index << '\n';
+            log.Logit();
+            for (const auto& op : cluster)
+            {
+                auto verticalVector = -1 * op.VerticalVector;
+                auto horizontalVector = -1 * op.HorizontalVector;
+
+                auto [nextIndex, nextVerticalVector, nextHorizontalVector] = NewPositionAndVelocity(log, record, index, verticalVector, horizontalVector, callback);
+
+                log.Logger() << op.Name << "  Collision node propagated from index " << index << " to index " << nextIndex << " using vector (" << nextVerticalVector << ',' << nextHorizontalVector << ")\n";
+                log.Logit();
+                callback(ParticleOperation(nextIndex, op.Name, nextVerticalVector, nextHorizontalVector, op.Mass, op.Speed));
+            }
+        }
+
+        //
+        //
         void ProcessPropagation(Log& log, Recorder<ParticleRecord>& record, 
+            const string& name,
             unsigned long long int index, 
             ProcessCallback<ParticleOperation, ParticleRecord>& callback)
         {
             auto& particleNode = model_[index];
- 
-            long long int tempIndex = (long long int)index + (particleNode.VerticalVector * width_) + particleNode.HorizontalVector;
-            if (tempIndex >= maxIndex_) tempIndex = tempIndex - maxIndex_;
-            if (tempIndex < 0) tempIndex = (long long int)maxIndex_ -1 /*+ tempIndex*/;
 
-            auto nextIndex = (unsigned long long int)tempIndex;
-            if (nextIndex >= maxIndex_)
+            auto [nextIndex, nextVerticalVector, nextHorizontalVector] = NewPositionAndVelocity(log, record, index, particleNode.VerticalVector, particleNode.HorizontalVector, callback);
+
+            record.Record(ParticleRecord(name, ParticleRecordType::Land, nextIndex, particleNode));
+            callback(ParticleOperation(nextIndex, name, nextVerticalVector, nextHorizontalVector, particleNode.Mass, particleNode.Speed));
+
+            log.Logger() << '<' << name << "> " << "Particle propagating from (" << particleNode.Name << ") index " << index << "\n";
+            log.Logit();
+            memset(particleNode.Name, '\0', sizeof(particleNode.Name));
+            particleNode.Occupied = false;
+        }
+
+        //
+        //
+        tuple<unsigned long long int, int, int> NewPositionAndVelocity(Log& log, Recorder<ParticleRecord>& record, 
+            unsigned long long int index, 
+            int verticalVector,
+            int horizontalVector,
+            ProcessCallback<ParticleOperation, ParticleRecord>& callback)
+        {
+            // NOTE - stay away from mixed signed/unsigned comparisons by casting everything signed.
+            int width = (int)width_;
+            int height = (int)height_;
+            long long int currentIndex = (long long int)index;
+
+            int nextVerticalPosition = currentIndex / width;
+            int nextVerticalVector = verticalVector;
+            nextVerticalPosition += nextVerticalVector;
+            if (nextVerticalPosition >= height)
             {
-                cout << "Next landing index " << nextIndex << " (" << tempIndex << ") out of range!!\n";
-                return;
+                nextVerticalPosition = height - (nextVerticalPosition - height) - 1;
+                nextVerticalVector *= -1;
             }
+            else if (nextVerticalPosition < 0)
+            {
+                nextVerticalPosition = 0 - nextVerticalPosition;
+                nextVerticalVector *= -1;
+            }
+
+            int nextHorizontalPosition = currentIndex % width;
+            int nextHorizontalVector = horizontalVector;
+            nextHorizontalPosition += nextHorizontalVector;
+            if (nextHorizontalPosition >= width)
+            {
+                nextHorizontalPosition = width - (nextHorizontalPosition - width) - 1;
+                nextHorizontalVector *= -1;
+            }
+            else if (nextHorizontalPosition < 0)
+            {
+                nextHorizontalPosition = 0 - nextHorizontalPosition;
+                nextHorizontalVector *= -1;
+            }
+
+            auto nextIndex = (unsigned long long int)nextVerticalPosition * width_ + (unsigned long long int)nextHorizontalPosition;
+
 #ifndef NOLOG
             log.Logger() 
                 << "Particle at node " << index 
-                << " with vector [" << particleNode.VerticalVector << ',' << particleNode.HorizontalVector 
+                << " with vector [" << verticalVector << ',' << horizontalVector 
                 << "] propagating to " << nextIndex << '\n';
             log.Logit();
 #endif
-
-            record.Record(ParticleRecord(ParticleRecordType::Land, index, particleNode));
-            callback(ParticleOperation(nextIndex, particleNode.VerticalVector, particleNode.HorizontalVector, particleNode.Mass, particleNode.Speed));
-            particleNode.Occupied = false;
+            return make_tuple(nextIndex, nextVerticalVector, nextHorizontalVector);
         }
 
         void ProcessLanding(Log& log, Recorder<ParticleRecord>& record, 
             unsigned long long int index, 
+            const string& name,
             int verticalVector,
             int horizontalVector,
             int mass,
@@ -191,14 +309,31 @@ namespace embeddedpenguins::particle::infrastructure
         {
             auto& particleNode = model_[index];
 
+            if (particleNode.Occupied)
+            {
+                verticalVector = -1 * verticalVector;
+                horizontalVector = -1 * horizontalVector;
+
+                auto [nextIndex, nextVerticalVector, nextHorizontalVector] = NewPositionAndVelocity(log, record, index, verticalVector, horizontalVector, callback);
+
+                log.Logger() << '<' << name << "> " << "Particle collision at index " << index << " already occupied by <" << particleNode.Name << ">\n";
+                log.Logit();
+                callback(ParticleOperation(nextIndex, name, nextVerticalVector, nextHorizontalVector, mass, speed));
+                return;
+            }
+
+            memset(particleNode.Name, '\0', sizeof(particleNode.Name));
+            memcpy(particleNode.Name, name.c_str(), (name.length() < sizeof(particleNode.Name) - 1 ? name.length() : sizeof(particleNode.Name) - 1));
             particleNode.Occupied = true;
             particleNode.VerticalVector = verticalVector;
             particleNode.HorizontalVector = horizontalVector;
             particleNode.Mass = mass;
             particleNode.Speed = speed;
 
-            record.Record(ParticleRecord(ParticleRecordType::Propagate, index, particleNode));
-            callback(ParticleOperation(index), 5);
+            log.Logger() << '<' << particleNode.Name << "> " << "Particle landed at index " << index << "\n";
+            log.Logit();
+            record.Record(ParticleRecord(name, ParticleRecordType::Propagate, index, particleNode));
+            callback(ParticleOperation(index, name), 10 - particleNode.Speed);
         }
     };
 }

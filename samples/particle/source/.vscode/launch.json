@@ -8,9 +8,9 @@
             "name": "g++-9 - Build and debug active file",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/../bin/LifeModel",
+            "program": "${workspaceFolder}/../bin/ParticleModel",
             "args": [
-                "life1"
+                "particle1"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/../bin",

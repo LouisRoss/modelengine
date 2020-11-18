@@ -1,6 +1,8 @@
 #pragma once
 
 #include <vector>
+#include <string>
+#include <cstring>
 
 #include "ProcessCallback.h"
 
@@ -12,6 +14,9 @@
 namespace embeddedpenguins::particle::infrastructure
 {
     using std::vector;
+    using std::string;
+    using std::memset;
+    using std::memcpy;
 
     using ::embeddedpenguins::modelengine::threads::ProcessCallback;
 
@@ -47,11 +52,13 @@ namespace embeddedpenguins::particle::infrastructure
         {
         }
 
-        void InitializeCell(vector<ParticleNode>& model, unsigned long int row, unsigned long int column, int horizontalVector, int verticalVector, int mass, int speed)
+        void InitializeCell(vector<ParticleNode>& model, const string& name, unsigned long int row, unsigned long int column, int horizontalVector, int verticalVector, int mass, int speed)
         {
             auto index = row * width_ + column;
             auto& particleNode = model[index];
 
+            memset(particleNode.Name, '\0', sizeof(particleNode.Name));
+            memcpy(particleNode.Name, name.c_str(), (name.length() < sizeof(particleNode.Name) - 1 ? name.length() : sizeof(particleNode.Name) - 1));
             particleNode.Occupied = true;
             particleNode.HorizontalVector = horizontalVector;
             particleNode.VerticalVector = verticalVector;
@@ -61,11 +68,13 @@ namespace embeddedpenguins::particle::infrastructure
             initializedCells_.push_back(index);
         }
 
-        void SignalInitialCells(ProcessCallback<ParticleOperation, ParticleRecord>& callback)
+        void SignalInitialCells(vector<ParticleNode>& model, ProcessCallback<ParticleOperation, ParticleRecord>& callback)
         {
             for (auto index : initializedCells_)
             {
-                callback(ParticleOperation(index));
+                auto& particleNode = model[index];
+                string particleName(particleNode.Name);
+                callback(ParticleOperation(index, particleName));
             }
         }
     };
