@@ -56,11 +56,13 @@ namespace embeddedpenguins::modelengine
 
             vector<WorkItem<OPERATORTYPE>> workForTimeSlice(begin(totalSourceWork_), cutoffPoint);
             totalSourceWork_.erase(begin(totalSourceWork_), cutoffPoint);
+#ifndef NOLOG
             if (!workForTimeSlice.empty())
             {
                 context_.Logger.Logger() << "Partitioning found " << workForTimeSlice.size() << " work items for tick " << workCutoffTick << ", leaving " << totalSourceWork_.size() << " for future ticks\n";
                 context_.Logger.Logit();
             }
+#endif
 
             //context_.Logger.Logger() << "Partitioning with " << workForTimeSlice.size() << " work items\n";
             //context_.Logger.Logit();
@@ -114,8 +116,10 @@ namespace embeddedpenguins::modelengine
 
         void CaptureWorkForEachThread(vector<WorkItem<OPERATORTYPE>>& workForTimeSlice)
         {
+#ifndef NOLOG
             context_.Logger.Logger() << "CaptureWorkForEachThread starting sort\n";
             context_.Logger.Logit();
+#endif
             std::sort(
                 std::execution::par,
                 begin(workForTimeSlice), 
@@ -124,8 +128,10 @@ namespace embeddedpenguins::modelengine
                     return lhs.Operator.Index < rhs.Operator.Index;
             });
 
+#ifndef NOLOG
             context_.Logger.Logger() << "CaptureWorkForEachThread allocating segments to worker threads\n";
             context_.Logger.Logit();
+#endif
 
             auto segmentSize = workForTimeSlice.size() / context_.WorkerCount;
             if (segmentSize < 1) segmentSize = 1;

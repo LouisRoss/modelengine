@@ -1,7 +1,7 @@
 IDIR=../../../include
 ILDIR=../include
 CC=g++
-CFLAGS=-I$(IDIR) -I$(ILDIR) -pthread -fpic -std=c++17
+CFLAGS=-I$(IDIR) -I$(ILDIR) -pthread -fpic -std=c++17 -DNOLOG
 
 ODIR=obj
 BDIR=../bin

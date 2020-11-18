@@ -157,8 +157,10 @@ namespace embeddedpenguins::modelengine
         void PartitionWork()
         {
             auto partitionStartTime = high_resolution_clock::now();
+#ifndef NOLOG
             context_.Logger.Logger() << "Starting partition phase\n";
             context_.Logger.Logit();
+#endif
 
             auto workCutoffTick = numeric_limits<unsigned long long int>::max();
             if (waiter_) workCutoffTick = waiter_->GetWorkCutoffTick();
@@ -210,8 +212,10 @@ namespace embeddedpenguins::modelengine
             }
             else if (context_.LoggingLevel != LogLevel::None)
             {
+#ifndef NOLOG
                 context_.Logger.Logger() << "Starting work phase\n";
                 context_.Logger.Logit();
+#endif
             }
 
             for (auto& worker : context_.Workers)
