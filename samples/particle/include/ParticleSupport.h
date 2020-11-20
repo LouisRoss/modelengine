@@ -52,7 +52,7 @@ namespace embeddedpenguins::particle::infrastructure
         {
         }
 
-        void InitializeCell(vector<ParticleNode>& model, const string& name, unsigned long int row, unsigned long int column, int horizontalVector, int verticalVector, int mass, int speed)
+        void InitializeCell(vector<ParticleNode>& model, const string& name, unsigned long int row, unsigned long int column, int horizontalVector, int verticalVector, int mass, int speed, ParticleType type)
         {
             auto index = row * width_ + column;
             auto& particleNode = model[index];
@@ -64,6 +64,7 @@ namespace embeddedpenguins::particle::infrastructure
             particleNode.VerticalVector = verticalVector;
             particleNode.Mass = mass;
             particleNode.Speed = speed;
+            particleNode.Type = type;
 
             initializedCells_.push_back(index);
         }

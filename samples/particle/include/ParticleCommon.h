@@ -8,4 +8,13 @@ namespace embeddedpenguins::particle::infrastructure
         Land,
         Collide
     };
+
+    enum class ParticleType
+    {
+        Neutron,
+        Electron,
+        Fermion,
+        Gluon,
+        Photon
+    };
 }

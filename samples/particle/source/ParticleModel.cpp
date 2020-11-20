@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string>
 #include <vector>
+#include <tuple>
 #include <iostream>
 #include <memory>
 #include <chrono>
@@ -19,6 +20,8 @@
 using std::cout;
 using std::string;
 using std::vector;
+using std::tuple;
+using std::make_tuple;
 using std::chrono::nanoseconds;
 using std::chrono::system_clock;
 using std::chrono::high_resolution_clock;
@@ -35,6 +38,7 @@ using embeddedpenguins::modelengine::sdk::ModelRunner;
 using embeddedpenguins::particle::infrastructure::ParticleOperation;
 using embeddedpenguins::particle::infrastructure::ParticleImplementation;
 using embeddedpenguins::particle::infrastructure::ParticleNode;
+using embeddedpenguins::particle::infrastructure::ParticleType;
 using embeddedpenguins::particle::infrastructure::ParticleRecord;
 using embeddedpenguins::particle::infrastructure::KeyListener;
 
@@ -173,7 +177,19 @@ void PrintLifeScan(ModelRunner<ParticleNode, ParticleOperation, ParticleImplemen
     {
         for (auto wide = windowWidth; wide; --wide)
         {
-            cout << (node->Occupied ? "*" : " ");
+            if (!node->Occupied) cout << ' ';
+            else
+            {
+                switch (node->Type)
+                {
+                case ParticleType::Neutron: cout << '*'; break;
+                case ParticleType::Electron: cout << '.'; break;
+                case ParticleType::Fermion: cout << '!'; break;
+                case ParticleType::Gluon: cout << '@'; break;
+                case ParticleType::Photon: cout << '+'; break;
+                default: cout << '-'; break;
+                }
+            }
             node++;
         }
         cout << '\n';

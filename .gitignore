@@ -9,3 +9,4 @@ samples/particle/bin/*.log
 samples/particle/bin/*.so
 samples/particle/bin/ParticleModel
 samples/particle/source/obj/*.o
+tests/source/ModelEngineRecord.csv

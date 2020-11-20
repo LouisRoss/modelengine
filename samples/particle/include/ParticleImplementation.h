@@ -5,7 +5,7 @@
 #include <cstring>
 #include <vector>
 #include <algorithm>
-#include <math.h>
+#include <cmath>
 
 #include "nlohmann/json.hpp"
 
@@ -31,6 +31,7 @@ namespace embeddedpenguins::particle::infrastructure
     using std::vector;
     using std::make_tuple;
     using std::tuple;
+    using std::abs;
 
     using nlohmann::json;
 
@@ -138,7 +139,7 @@ namespace embeddedpenguins::particle::infrastructure
                 break;
 
             case Operation::Land:
-                ProcessLanding(log, record, work.Index, particleName, work.VerticalVector, work.HorizontalVector, work.Mass, work.Speed, callback);
+                ProcessLanding(log, record, work.Index, particleName, work.VerticalVector, work.HorizontalVector, work.Gradient, work.Mass, work.Speed, work.Type, callback);
                 break;
 
             default:
@@ -159,10 +160,10 @@ namespace embeddedpenguins::particle::infrastructure
         {
             auto& particleNode = model_[index];
 
-            auto [nextIndex, nextVerticalVector, nextHorizontalVector] = NewPositionAndVelocity(log, record, index, particleNode.VerticalVector, particleNode.HorizontalVector, callback);
+            auto [nextIndex, nextVerticalVector, nextHorizontalVector] = NewPositionAndVelocity(log, record, index, particleNode.VerticalVector, particleNode.HorizontalVector, particleNode.Gradient, callback);
 
             record.Record(ParticleRecord(name, ParticleRecordType::Land, nextIndex, particleNode));
-            callback(ParticleOperation(nextIndex, name, nextVerticalVector, nextHorizontalVector, particleNode.Mass, particleNode.Speed));
+            callback(ParticleOperation(nextIndex, name, nextVerticalVector, nextHorizontalVector, particleNode.Gradient, particleNode.Mass, particleNode.Speed, particleNode.Type));
 
 #ifndef NOLOG
             log.Logger() << '<' << name << "> " << "Particle propagating from (" << particleNode.Name << ") index " << index << "\n";
@@ -183,8 +184,10 @@ namespace embeddedpenguins::particle::infrastructure
             const string& name,
             int verticalVector,
             int horizontalVector,
+            int gradient,
             int mass,
             int speed,
+            ParticleType type,
             ProcessCallback<ParticleOperation, ParticleRecord>& callback)
         {
             auto& particleNode = model_[index];
@@ -194,13 +197,13 @@ namespace embeddedpenguins::particle::infrastructure
                 verticalVector = -1 * verticalVector;
                 horizontalVector = -1 * horizontalVector;
 
-                auto [nextIndex, nextVerticalVector, nextHorizontalVector] = NewPositionAndVelocity(log, record, index, verticalVector, horizontalVector, callback);
+                auto [nextIndex, nextVerticalVector, nextHorizontalVector] = NewPositionAndVelocity(log, record, index, verticalVector, horizontalVector, particleNode.Gradient, callback);
 
 #ifndef NOLOG
                 log.Logger() << '<' << name << "> " << "Particle collision at index " << index << " already occupied by <" << particleNode.Name << ">\n";
                 log.Logit();
 #endif
-                callback(ParticleOperation(nextIndex, name, nextVerticalVector, nextHorizontalVector, mass, speed));
+                callback(ParticleOperation(nextIndex, name, nextVerticalVector, nextHorizontalVector, gradient, mass, speed, type));
                 return;
             }
 
@@ -209,8 +212,10 @@ namespace embeddedpenguins::particle::infrastructure
             particleNode.Occupied = true;
             particleNode.VerticalVector = verticalVector;
             particleNode.HorizontalVector = horizontalVector;
+            particleNode.Gradient = gradient;
             particleNode.Mass = mass;
             particleNode.Speed = speed;
+            particleNode.Type = type;
 
 #ifndef NOLOG
             log.Logger() << '<' << particleNode.Name << "> " << "Particle landed at index " << index << "\n";
@@ -229,6 +234,7 @@ namespace embeddedpenguins::particle::infrastructure
             unsigned long long int index, 
             int verticalVector,
             int horizontalVector,
+            int& gradient,
             ProcessCallback<ParticleOperation, ParticleRecord>& callback)
         {
             // NOTE - stay away from mixed signed/unsigned comparisons by casting everything signed.
@@ -236,9 +242,12 @@ namespace embeddedpenguins::particle::infrastructure
             int height = (int)height_;
             long long int currentIndex = (long long int)index;
 
+            auto [horizontalStep, verticalStep] = DoBresenhamAlgorithm(verticalVector, horizontalVector, gradient);
+
             int nextVerticalPosition = currentIndex / width;
             int nextVerticalVector = verticalVector;
-            nextVerticalPosition += nextVerticalVector;
+            //nextVerticalPosition += nextVerticalVector;
+            nextVerticalPosition += verticalStep;
             if (nextVerticalPosition >= height)
             {
                 nextVerticalPosition = height - (nextVerticalPosition - height) - 1;
@@ -252,7 +261,8 @@ namespace embeddedpenguins::particle::infrastructure
 
             int nextHorizontalPosition = currentIndex % width;
             int nextHorizontalVector = horizontalVector;
-            nextHorizontalPosition += nextHorizontalVector;
+            //nextHorizontalPosition += nextHorizontalVector;
+            nextHorizontalPosition += horizontalStep;
             if (nextHorizontalPosition >= width)
             {
                 nextHorizontalPosition = width - (nextHorizontalPosition - width) - 1;
@@ -267,6 +277,93 @@ namespace embeddedpenguins::particle::infrastructure
             auto nextIndex = (unsigned long long int)nextVerticalPosition * width_ + (unsigned long long int)nextHorizontalPosition;
 
             return make_tuple(nextIndex, nextVerticalVector, nextHorizontalVector);
+        }
+
+        //
+        // https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
+        //
+        tuple<int, int> DoBresenhamAlgorithm(int verticalVector, int horizontalVector, int& gradient)
+        {
+            int xStep {};
+            int yStep {};
+
+            auto absHorizontalVector = abs(horizontalVector);
+            auto absVerticalVector = abs(verticalVector);
+            auto widerThanTall = (absHorizontalVector > absVerticalVector);
+            int& baseStep = widerThanTall ? xStep : yStep;
+            int& riseStep =  widerThanTall ? yStep : xStep;
+            int absBaseVector = widerThanTall ? absHorizontalVector : absVerticalVector;
+            int absRiseVector = widerThanTall ? absVerticalVector : absHorizontalVector;
+            int baseMagnitude {};
+            int riseMagnitude {};
+
+            if (verticalVector >= 0 && horizontalVector >= 0)
+            {
+                if (widerThanTall)
+                {
+                    baseMagnitude = 1;
+                    riseMagnitude = 1;
+                }
+                else
+                {
+                    baseMagnitude = 1;
+                    riseMagnitude = 1;
+                }
+            }
+            else if (verticalVector >= 0 && horizontalVector < 0)
+            {
+                if (widerThanTall)
+                {
+                    baseMagnitude = -1;
+                    riseMagnitude = 1;
+                }
+                else
+                {
+                    baseMagnitude = 1;
+                    riseMagnitude = -1;
+                }
+            }
+            else if (verticalVector < 0 && horizontalVector < 0)
+            {
+                if (widerThanTall)
+                {
+                    baseMagnitude = -1;
+                    riseMagnitude = -1;
+                }
+                else
+                {
+                    baseMagnitude = -1;
+                    riseMagnitude = -1;
+                }
+            }
+            else
+            {
+                if (widerThanTall)
+                {
+                    baseMagnitude = 1;
+                    riseMagnitude = -1;
+                }
+                else
+                {
+                    baseMagnitude = -1;
+                    riseMagnitude = 1;
+                }
+            }
+
+            if (gradient > 0)
+            {
+                baseStep = baseMagnitude;
+                riseStep = riseMagnitude;
+                gradient = gradient + absRiseVector - absBaseVector;
+            }
+            else
+            {
+                baseStep = baseMagnitude;
+                riseStep = 0;
+                gradient = gradient + absRiseVector;
+            }
+
+            return make_tuple(xStep, yStep);
         }
     };
 }

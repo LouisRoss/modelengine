@@ -38,6 +38,7 @@ namespace embeddedpenguins::particle::infrastructure
         int horizontalVector = -3;
         int mass = 5;
         int speed = 0;
+        ParticleType type = ParticleType::Neutron;
 
         for (auto row = 0; row < height_; row += 8)
         {
@@ -45,7 +46,7 @@ namespace embeddedpenguins::particle::infrastructure
             {
                 ostringstream nameStream;
                 nameStream << "P(" << std::setw(3) << std::setfill('0') << row << ',' << std::setw(3) << std::setfill('0') << column << ')';
-                support_.InitializeCell(model_, nameStream.str(), row, column, verticalVector, horizontalVector, mass, speed);
+                support_.InitializeCell(model_, nameStream.str(), row, column, verticalVector, horizontalVector, mass, speed, type);
 
                 verticalVector++;
                 if (verticalVector > 3)
@@ -57,6 +58,10 @@ namespace embeddedpenguins::particle::infrastructure
                 if (verticalVector == 0 && horizontalVector == 0) verticalVector++;
                 speed++;
                 if (speed > 9) speed = 0;
+
+                auto nextType = (int)type + 1;
+                if (nextType > (int)ParticleType::Photon) nextType = 0;
+                type = (ParticleType)nextType;
             }
         }
     }
