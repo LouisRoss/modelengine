@@ -66,3 +66,10 @@ In either case, you should build and run one of the samples.  The primitive GUI 
 set your terminal screen to at least 27 rows deep by 50 columns wide.  You should see a tiny
 window onto a 1000 X 1000 grid of cells, operating the specified sample.
 
+Here is a sample run of the Game of Life sample:
+
+![Life Sample](images/LifeSample.png)
+
+The console updates continuously, highlighting that the model engine keeps one 
+hardware core in reserve.
+
