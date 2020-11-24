@@ -32,8 +32,8 @@ Contents
     * [The four required classes](#the-four-required-classes)
         * [The model Node class](#the-model-node-class)
         * [The model *Operation* class](#the-model-operation-class)
-        * [The model *Implementation* class](#the-model-*implementation*-class)
-        * [The model *Record* class](#the-model-*record*-class)
+        * [The model *Implementation* class](#the-model-implementation-class)
+        * [The model *Record* class](#the-model-record-class)
 
 
 ## License
