@@ -128,7 +128,7 @@ and quit.  See the legend at the bottom.
 ## A bit more about the particle simulation
 
 There are actually 15,625 particles in the particle simulation (when it is set to its default
-100 X 1000 size), only about 13,000 of which were present in the model at the time of the 
+1000 X 1000 size), only about 13,000 of which were present in the model at the time of the 
 screenshot above.  The rest were in the work queue of the Model Engine, 
 waiting to be processed during the next tick.  The way the simulation works is to propagate 
 particles by calculating what cell they should propagate to, signaling the Model Engine to 
