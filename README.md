@@ -162,7 +162,7 @@ to set the tick speed faster or slower.
 -------------------------
 
 The included `dockb` and `dock` scripts build a Docker image and run it as a container, respectively.
-When the Docker container is running, it has a *bind mount* between the modelengine project
+When the Docker container is running, it has a *bind mount* between the Model Engine project
 folder on your host and a folder inside the Docker container at `/home/modelengine`.  This means
 that these folders are shared between the host and the container -- what happens to files on the
 host happens to them inside the container, and vice versa.
@@ -218,7 +218,7 @@ showcase for the major elements of the ModelEngine SDK:
 
 - The `ModelRunner` instance, `modelRunner`.  Just create a `ModelRunner` instance and tell it to 
 run and quit when desired.  
-- In order to create a `ModelRunner` instance, you need to create the [four required classes](#four_required_casses)
+- In order to create a `ModelRunner` instance, you need to create the [four required classes](#the-four-required-classes)
 and pass them to the `ModelRunner` declaration as template arguments.  
 All of the code defining the attributes and behavior of the model are contained in these four classes.  
 - You have access to a Json object with configuration information (through use of the most excellent [nlohmann/json](https://github.com/nlohmann/json) software).  Use of the json object to get the configured width and height of the
@@ -240,7 +240,7 @@ as template arguments.  These four classes are:
 - **The model Node class**.  A *model* is a (potentially very large) vector of this class.
 - **The model Operation class**.  The *operation* class carries any information needed by your code to perform operations on nodes of the model.
 - **The model Implemetation class**.  This class implements the operations on nodes as described by the two classes above.  
-- **The model record class**.  Using this class allows you to create a record of any interesting state changes that happen to your model, and save the record as a CSV file at the end of a run.
+- **The model record class**.  Use this class to create a record of any interesting state changes that happen to your model, and save the record as a CSV file at the end of a run.
 
 ### The model *Node* class
 --------------------------
@@ -248,15 +248,41 @@ This class defines what can be represented in a single cell of your automata *mo
 
 In the `Life` sample, this class is actually a struct called `LifeNode`.  It has only two public fields indicating whether the cell it represents is alive and whether the same cell should be alive next tick.
 
-![LifeNode](images/LifeNode.png)
-
+```cpp
+namespace embeddedpenguins::life::infrastructure
+{
+    struct LifeNode
+    {
+        bool Alive { false };
+        bool AliveNextTick { false };
+    };
+}
+```
 ### The model *Operation* class
 -------------------------------
 The model progresses from tick to tick by performing operations on model nodes.  The *operation* class contains any information needed by your code to indicate what operation should be done during a tick.  
 
 In the `Life` sample, this class is a struct called `LifeOperation`.  It has a public field of type `Operation`, which is an enum with two values, `Evaluate` and `Propagate`.
 
-![LifeOperation](images/LifeOperation.png)
+
+```cpp
+namespace embeddedpenguins::life::infrastructure
+{
+    struct LifeOperation
+    {
+        unsigned long long int Index {0};
+        Operation Op;
+
+        LifeOperation() : Op(Operation::Evaluate) { }
+        LifeOperation(unsigned long long int index, Operation op) : 
+            Index(index), 
+            Op(op)
+        {
+            
+        }
+    };
+}
+```
 
 **BIG IMPORTANT NOTE**: The *operation* class **MUST** contain an field of type `unsigned long
 long int` named `Index`.  You will get many long and opaque error messages from the compiler
@@ -273,43 +299,46 @@ There are several aspects of this class that are required, and are listed here:
 - You must supply a method called `Process()`.  Once all work items have been partitioned among all the worker threads, each instance of this class will be called on its `Process()` method with the work it needs to do before it returns.
 - You must supply a method called `Finalize()`.  As with `Initialize()`, one instance of this class will be called to clean up as the Model Engine shuts down.
 
-The important contractual expectation for this class is that it will accept a collection of work items, each of which will be expressed as an *operation* class object.  Each work item has an `Index` field, and it is required that the `Process()` method should never make any changes to the model other than to the node at `model[work.Index]`.  Different instances of this class will run on different hardware threads, and it is important that each thread write only to cells assigned to it.
+The important contractual expectation for this class is that it will accept a collection of work items, each of which will be expressed as an *operation* class object.  Each work item has an `Index` field, and it is required that the `Process()` method should never make any changes to the model other than to the node at `model[work.Index]`.  Different instances of this class will run on different hardware threads, and it is important that each thread write only to nodes assigned to it.
 
 ```cpp
-class LifeImplementation : public WorkerThread<LifeOperation, LifeImplementation, LifeRecord>
+namespace embeddedpenguins::life::infrastructure
 {
-public:
-    // Required constructor.
-    LifeImplementation(int workerId, vector<LifeNode>& model, const json& configuration) :
-        workerId_(workerId),
-        model_(model),
-        configuration_(configuration)
+    class LifeImplementation : public WorkerThread<LifeOperation, LifeImplementation, LifeRecord>
     {
-        /* ... */
-    }
+    public:
+        // Required constructor.
+        LifeImplementation(int workerId, vector<LifeNode>& model, const json& configuration) :
+            workerId_(workerId),
+            model_(model),
+            configuration_(configuration)
+        {
+            /* ... */
+        }
 
-    // Required Initialize method.  
-    void Initialize(Log& log, Recorder<LifeRecord>& record, 
-        unsigned long long int tickNow, 
-        ProcessCallback<LifeOperation, LifeRecord>& callback)
-    {
-    }
+        // Required Initialize method.  
+        void Initialize(Log& log, Recorder<LifeRecord>& record, 
+            unsigned long long int tickNow, 
+            ProcessCallback<LifeOperation, LifeRecord>& callback)
+        {
+        }
 
-    // Required Process method.
-    void Process(Log& log, Recorder<LifeRecord>& record, 
-        unsigned long long int tickNow, 
-        typename vector<WorkItem<LifeOperation>>::iterator begin, 
-        typename vector<WorkItem<LifeOperation>>::iterator end, 
-        ProcessCallback<LifeOperation, LifeRecord>& callback)
-    {
-        /* ... */
-    }
+        // Required Process method.
+        void Process(Log& log, Recorder<LifeRecord>& record, 
+            unsigned long long int tickNow, 
+            typename vector<WorkItem<LifeOperation>>::iterator begin, 
+            typename vector<WorkItem<LifeOperation>>::iterator end, 
+            ProcessCallback<LifeOperation, LifeRecord>& callback)
+        {
+            /* ... */
+        }
 
-    // Required Finalize method.
-    void Finalize(Log& log, Recorder<LifeRecord>& record, unsigned long long int tickNow)
-    {
-    }
-};
+        // Required Finalize method.
+        void Finalize(Log& log, Recorder<LifeRecord>& record, unsigned long long int tickNow)
+        {
+        }
+    };
+}
 ```
 
 One important point to note about the *implementation* class is the last parameter of the
@@ -343,14 +372,6 @@ The Model Engine keeps an in-memory vector of these records.  When the model run
 In the `Life` sample, the *record* class is called `LifeRecord`:
 
 ```cpp
-#pragma once
-
-#include <string>
-#include <sstream>
-
-#include "LifeCommon.h"
-#include "LifeNode.h"
-
 namespace embeddedpenguins::life::infrastructure
 {
     using std::string;
@@ -360,11 +381,6 @@ namespace embeddedpenguins::life::infrastructure
     {
         Evaluation,
         Propagate
-    };
-
-    struct LifeRecordEvaluation
-    {
-        unsigned long long int LifeIndex { };
     };
 
     struct LifeRecord

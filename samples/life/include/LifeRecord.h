@@ -17,11 +17,6 @@ namespace embeddedpenguins::life::infrastructure
         Propagate
     };
 
-    struct LifeRecordEvaluation
-    {
-        unsigned long long int LifeIndex { };
-    };
-
     struct LifeRecord
     {
         LifeRecordType Type { LifeRecordType::Evaluation };
