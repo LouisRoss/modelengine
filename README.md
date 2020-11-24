@@ -30,7 +30,7 @@ Contents
 * [Getting Started](#getting-started)
 * [Programming to the SDK](#programming-to-the-sdk)
     * [The four required classes](#the-four-required-classes)
-        * [The model Node class](#the-model-node-class)
+        * [The model *Node* class](#the-model-node-class)
         * [The model *Operation* class](#the-model-operation-class)
         * [The model *Implementation* class](#the-model-implementation-class)
         * [The model *Record* class](#the-model-record-class)
@@ -179,8 +179,39 @@ an SDK file `ModelRunner.h'.
 
 Here is the full code for the Game of Life sample program's `main()` function.
 
-![Life Main](images/LifeMain.png)
+```cpp
+///////////////////////////////////////////////////////////////////////////
+//Main program entry.
+//Run the game of life model.
+//
+int main(int argc, char* argv[])
+{
+    ParseArguments(argc, argv);
+    ModelRunner<LifeNode, LifeOperation, LifeImplementation, LifeRecord> modelRunner(argc, argv);
 
+    auto& configuration = modelRunner.Configuration();
+    auto dimensionElement = configuration["Model"]["Dimensions"];
+    if (dimensionElement.is_array())
+    {
+        auto dimensionArray = dimensionElement.get<vector<int>>();
+        width = dimensionArray[0];
+        height = dimensionArray[1];
+    }
+    centerWidth = width / 2;
+    centerHeight = height / 2;
+
+    if (!modelRunner.Run())
+    {
+        cout << "Cannot run model, stopping\n";
+        return 1;
+    }
+
+    PrintAndListenForQuit(modelRunner);
+
+    modelRunner.WaitForQuit();
+    return 0;
+}
+```
 
 Disregarding as application-specific the calls to `ParseArguments()` and `PrintAndListenForQuit()`, this code is a great
 showcase for the major elements of the ModelEngine SDK:
@@ -209,12 +240,7 @@ as template arguments.  These four classes are:
 - **The model Node class**.  A *model* is a (potentially very large) vector of this class.
 - **The model Operation class**.  The *operation* class carries any information needed by your code to perform operations on nodes of the model.
 - **The model Implemetation class**.  This class implements the operations on nodes as described by the two classes above.  
-- **The model record class**.  As required in your model code -- typically in code in the
-*implementation* class -- you may record state changes of individual nodes in the model.
-The Model Engine keeps an in-memory vector of these records implemented by your *record* class,
-implemented by the `Life` sample as the `LifeRecord` class.
-When the model run is over, this vector is written to a file on disk in CSV format.  You
-may use normal data processing tools to filter, sort, and evaluate the behavior of your model.
+- **The model record class**.  Using this class allows you to create a record of any interesting state changes that happen to your model, and save the record as a CSV file at the end of a run.
 
 ### The model *Node* class
 --------------------------
