@@ -132,7 +132,7 @@ There are actually 15,625 particles in the particle simulation (when it is set t
 screenshot above.  The rest were in the work queue of the Model Engine, 
 waiting to be processed during the next tick.  The way the simulation works is to propagate 
 particles by calculating what cell they should propagate to, signaling the Model Engine to 
-perform the necessary work the create the particle in that new cell, then erasing the 
+perform the necessary work to create the particle in that new cell, then erasing the 
 particle from its current cell.  During the intervening Model Engine tick, 
 the particle is 'in flight', existing only in the Model Engine's work queue.
 
