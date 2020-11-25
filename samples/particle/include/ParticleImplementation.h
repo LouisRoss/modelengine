@@ -246,7 +246,6 @@ namespace embeddedpenguins::particle::infrastructure
 
             int nextVerticalPosition = currentIndex / width;
             int nextVerticalVector = verticalVector;
-            //nextVerticalPosition += nextVerticalVector;
             nextVerticalPosition += verticalStep;
             if (nextVerticalPosition >= height)
             {
@@ -261,7 +260,6 @@ namespace embeddedpenguins::particle::infrastructure
 
             int nextHorizontalPosition = currentIndex % width;
             int nextHorizontalVector = horizontalVector;
-            //nextHorizontalPosition += nextHorizontalVector;
             nextHorizontalPosition += horizontalStep;
             if (nextHorizontalPosition >= width)
             {
@@ -280,7 +278,16 @@ namespace embeddedpenguins::particle::infrastructure
         }
 
         //
+        // An implementation of the Bresenham algorithm to draw the straightest line possible
+        // give the quantization effects imposed by a discrete grid.
         // https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
+        //
+        // The current vertical/horizontal vector indicates the direction the particle is traveling
+        // (ignore the length of the vector), and the gradient (also kept as state within each particle) 
+        // indicates the current error above or below the 'ideal straight line' from the current position.
+        //
+        // Return a tuple indicating the horizontal/vertical deltas to get to the next position.
+        // Both numbers may be -1, 0, or 1.  Also return an updated value for the gradient.
         //
         tuple<int, int> DoBresenhamAlgorithm(int verticalVector, int horizontalVector, int& gradient)
         {
@@ -290,10 +297,14 @@ namespace embeddedpenguins::particle::infrastructure
             auto absHorizontalVector = abs(horizontalVector);
             auto absVerticalVector = abs(verticalVector);
             auto widerThanTall = (absHorizontalVector > absVerticalVector);
+
+            // After renormalizing to the first quandrant, we zero in on the right octant with these references.
             int& baseStep = widerThanTall ? xStep : yStep;
             int& riseStep =  widerThanTall ? yStep : xStep;
             int absBaseVector = widerThanTall ? absHorizontalVector : absVerticalVector;
             int absRiseVector = widerThanTall ? absVerticalVector : absHorizontalVector;
+
+            // This ugly code finds the correct pair of magnitudes [-1, 0, 1] to move in the current octant.
             int baseMagnitude {};
             int riseMagnitude {};
 
@@ -350,6 +361,7 @@ namespace embeddedpenguins::particle::infrastructure
                 }
             }
 
+            // Once all the octant information is straight, the actual algorithm is simple.
             if (gradient > 0)
             {
                 baseStep = baseMagnitude;
