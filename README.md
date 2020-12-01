@@ -114,7 +114,7 @@ it with the Model Engine is straightforward.
 
 Here is a sample run of the Particle simulator:
 
-![Particle Simulator](images/ParticleSample.png)
+![Particle Simulator](images/particle.gif)
 
 In this example, the model is tracking around 13,000 particles of different types, each
 tick of the simulation is 50 milliseconds, we have executed 1,016 ticks, processing
