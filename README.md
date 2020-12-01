@@ -105,7 +105,7 @@ window onto a 1000 X 1000 grid of cells, operating the specified sample.
 
 Here is a sample run of the Game of Life sample:
 
-![Life Sample](images/LifeSample.png)
+![Life Sample](images/life.gif)
 
 The console updates continuously, so it is good that the model engine keeps one 
 hardware core in reserve.  The game board is only initialzed with a few 'living' 
