@@ -1,6 +1,7 @@
 #pragma once
 
 #include <chrono>
+#include <limits>
 
 #include "ModelEngineCommon.h"
 #include "WorkerContext.h"
@@ -34,9 +35,17 @@ namespace embeddedpenguins::modelengine::threads
             
         }
 
-        void operator() (const OPERATORTYPE& work, int tickDelay = 0)
+        //
+        // Push a new work item onto the big list.  The tickDelay is relative
+        // to the current tick (this is typically called by work in progress),
+        // so zero is invalid -- it is not possible to schedule any work for 
+        // the current tick.  Treat anything less than 1 as 1.
+        //
+        void operator() (const OPERATORTYPE& work, int tickDelay = 1)
         {
-            context_.WorkForNextThread.push_back(WorkItem<OPERATORTYPE> { context_.Iterations + tickDelay, work });
+            auto delay = std::max<int>(1, tickDelay);
+            delay--;
+            context_.WorkForNextThread.push_back(WorkItem<OPERATORTYPE> { context_.Iterations + delay, work });
         }
     };
 }
