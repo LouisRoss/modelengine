@@ -42,12 +42,14 @@ namespace embeddedpenguins::modelengine
         time_point startTime_ {};
 
     public:
-        int GetWorkerCount() { return context_.WorkerCount; }
-        long long int GetTotalWork() { return context_.TotalWork; }
-        long long int GetIterations() { return context_.Iterations; }
-        nanoseconds GetDuration() { return duration_; }
-        void SetLogFile(const string& logfile) { context_.LogFile = logfile; }
-        void SetRecordFile(const string& recordfile) { context_.RecordFile = recordfile; }
+        const int GetWorkerCount() const { return context_.WorkerCount; }
+        const long long int GetTotalWork() const { return context_.TotalWork; }
+        const long long int GetIterations() const { return context_.Iterations; }
+        const nanoseconds GetDuration() const { return duration_; }
+        const string& LogFile() const { return context_.LogFile; }
+        void LogFile(const string& logfile) { context_.LogFile = logfile; }
+        const string& RecordFile() const { return context_.RecordFile; }
+        void RecordFile(const string& recordfile) { context_.RecordFile = recordfile; }
         const microseconds EnginePeriod() const { return context_.EnginePeriod; }
         microseconds& EnginePeriod() { return context_.EnginePeriod; }
 

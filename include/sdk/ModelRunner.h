@@ -6,6 +6,7 @@
 #include <memory>
 #include <vector>
 #include <iostream>
+#include <filesystem>
 
 #include "nlohmann/json.hpp"
 
@@ -23,6 +24,7 @@ namespace embeddedpenguins::modelengine::sdk
     using std::vector;
     using std::cout;
     using std::ifstream;
+    using std::filesystem::create_directories;
     using nlohmann::json;
     using embeddedpenguins::modelengine::ModelEngine;
 
@@ -260,7 +262,8 @@ namespace embeddedpenguins::modelengine::sdk
                 microseconds(ticks),
                 configuration_);
 
-            modelEngine_->SetRecordFile(ComposeRecordPath());
+            modelEngine_->RecordFile(ComposeRecordPath());
+            modelEngine_->LogFile(ComposeLoggingPath());
             modelEngine_->Run();
 
             // After the model is running, let the initializer inject a startup work load.
@@ -271,12 +274,56 @@ namespace embeddedpenguins::modelengine::sdk
 
         string ComposeRecordPath()
         {
-            string location(configuration_["PostProcessing"]["RecordLocation"]);
-            string file(configuration_["PostProcessing"]["RecordFile"]);
-            auto recordPath = location + file;
-            recordPath.erase(remove(begin(recordPath), end(recordPath), '\"'), end(recordPath));
+            auto recordDirectory = ExtractRecordDirectory();
 
-            return recordPath;
+            string fileName {"ModelEngineRecord.csv"};
+            auto file(configuration_["PostProcessing"]["RecordFile"]);
+            if (file.is_string())
+                fileName = file.get<string>();
+
+            return recordDirectory + fileName;
+        }
+
+        string ComposeLoggingPath()
+        {
+            auto recordDirectory = ExtractRecordDirectory();
+            auto& fileName = modelEngine_->LogFile();
+
+            return recordDirectory + fileName;
+        }
+
+        string ExtractRecordDirectory()
+        {
+            string recordDirectory {"./"};
+            auto path = configuration_["PostProcessing"]["RecordLocation"];
+            if (path.is_string())
+                recordDirectory = path.get<string>();
+
+            if (recordDirectory[recordDirectory.length() - 1] != '/')
+                recordDirectory += '/';
+
+            auto project = control_["Configuration"];
+            if (project.is_string())
+            {
+                auto configuration= project.get<string>();
+                auto lastSlashPos = configuration.rfind('/');
+                if (lastSlashPos != configuration.npos)
+                    configuration = configuration.substr(lastSlashPos + 1, configuration.size() - lastSlashPos);
+
+                auto jsonExtensionPos = configuration.rfind(".json");
+                if (jsonExtensionPos != configuration.npos)
+                    configuration = configuration.substr(0, jsonExtensionPos);
+
+                recordDirectory += configuration;
+            }
+
+            if (recordDirectory[recordDirectory.length() - 1] != '/')
+                recordDirectory += '/';
+
+            cout << "Record directory: " << recordDirectory << '\n';
+
+            create_directories(recordDirectory);
+            return recordDirectory;
         }
     };
 }
