@@ -48,8 +48,10 @@ namespace embeddedpenguins::modelengine
 
         virtual unsigned long int Partition(unsigned long long int workCutoffTick) override
         {
-            //context_.Logger.Logger() << "Starting Partition\n";
-            //context_.Logger.Logit();
+#ifndef NOLOG
+            context_.Logger.Logger() << "Starting Partition\n";
+            context_.Logger.Logit();
+#endif
 
             AccumulateWorkFromAllWorkers();
             auto cutoffPoint = FindCutoffPoint(workCutoffTick);
@@ -64,8 +66,6 @@ namespace embeddedpenguins::modelengine
             }
 #endif
 
-            //context_.Logger.Logger() << "Partitioning with " << workForTimeSlice.size() << " work items\n";
-            //context_.Logger.Logit();
             auto totalWork = workForTimeSlice.size();
             context_.TotalWork += totalWork;
             ++context_.Iterations;
@@ -95,9 +95,6 @@ namespace embeddedpenguins::modelengine
                 begin(externalSourceWork), 
                 end(externalSourceWork));
             externalSourceWork.clear();
-
-            //context_.Logger.Logger() << "Partition found a total of " << totalSourceWork_.size() << " work items\n";
-            //context_.Logger.Logit();
         }
 
         typename vector<WorkItem<OPERATORTYPE>>::iterator FindCutoffPoint(unsigned long long int workCutoffTick)
@@ -108,8 +105,6 @@ namespace embeddedpenguins::modelengine
                 [workCutoffTick](const WorkItem<OPERATORTYPE>& work){
                     return work.Tick < workCutoffTick;
             });
-            //context_.Logger.Logger() << "Partition found cutoff point for time " << Log::FormatTime(workCutoffTime) << " at " << cutoffPoint - begin(totalSourceWork_) << "\n";
-            //context_.Logger.Logit();
 
             return cutoffPoint;
         }

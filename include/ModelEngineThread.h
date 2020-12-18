@@ -119,8 +119,10 @@ namespace embeddedpenguins::modelengine
         void MainLoop()
         {
             auto engineStartTime = high_resolution_clock::now();
+#ifndef NOLOG
             context_.Logger.Logger() << "ModelEngine starting main loop\n";
             context_.Logger.Logit();
+#endif
 
             auto quit {false};
             do
@@ -136,8 +138,10 @@ namespace embeddedpenguins::modelengine
             auto engineElapsed = duration_cast<microseconds>(high_resolution_clock::now() - engineStartTime).count();
             auto partitionElapsed = context_.PartitionTime.count();
 
+#ifndef NOLOG
             context_.Logger.Logger() << "ModelEngine quitting main loop\n";
             context_.Logger.Logit();
+#endif
 
             double partitionRatio = (double)partitionElapsed / (double)engineElapsed;
             cout 
@@ -180,6 +184,7 @@ namespace embeddedpenguins::modelengine
 
         void DoWorkWithAllWorkers()
         {
+#ifndef NOLOG
             if (context_.LoggingLevel == LogLevel::Diagnostic)
             {
                 auto workPresent { false };
@@ -212,11 +217,10 @@ namespace embeddedpenguins::modelengine
             }
             else if (context_.LoggingLevel != LogLevel::None)
             {
-#ifndef NOLOG
                 context_.Logger.Logger() << "Starting work phase\n";
                 context_.Logger.Logit();
-#endif
             }
+#endif
 
             for (auto& worker : context_.Workers)
                 worker->Scan(WorkCode::Scan);
@@ -229,12 +233,16 @@ namespace embeddedpenguins::modelengine
             context_.Workers[0]->Scan(WorkCode::FinalScan);
             context_.Workers[0]->WaitForPreviousScan();
 
+#ifndef NOLOG
             context_.Logger.Logger() << "ModelEngine waiting for worker threads to quit\n";
             context_.Logger.Logit();
+#endif
             for (auto& worker : context_.Workers)
                 worker->Join();
+#ifndef NOLOG
             context_.Logger.Logger() << "ModelEngine joined all worker threads\n";
             context_.Logger.Logit();
+#endif
         }
    };
 }
