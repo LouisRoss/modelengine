@@ -24,6 +24,7 @@ namespace embeddedpenguins::modelengine
     using Clock = std::chrono::high_resolution_clock;
     using embeddedpenguins::modelengine::threads::Worker;
     using embeddedpenguins::modelengine::threads::WorkerContextOp;
+    using embeddedpenguins::modelengine::threads::CurrentBufferType;
 
     //
     // AdaptiveWidthPartitioner.  For each scan, partition work to workers,
@@ -39,6 +40,7 @@ namespace embeddedpenguins::modelengine
         // Expose some internal state to derived classes to allow for testing.
     protected:
         vector<WorkItem<OPERATORTYPE>> totalSourceWork_ {};
+        vector<WorkItem<OPERATORTYPE>> workForNextTick_ {};
 
     public:
         AdaptiveWidthPartitioner(ModelEngineContext<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, RECORDTYPE>& context) :
@@ -46,42 +48,55 @@ namespace embeddedpenguins::modelengine
         {
         }
 
-        virtual unsigned long int Partition(unsigned long long int workCutoffTick) override
+        //
+        // The controlling thread will start the worker threads with work for this tick,
+        // then call this to allow the partitioner to do anything that is possible while
+        // the worker threads are running.
+        //
+        virtual void ConcurrentPartitionStep() override
         {
 #ifndef NOLOG
-            context_.Logger.Logger() << "Starting Partition\n";
+            context_.Logger.Logger() << "Accumulating future work from all workers and Splitting out work for next tick\n";
             context_.Logger.Logit();
 #endif
 
-            AccumulateWorkFromAllWorkers();
-            auto cutoffPoint = FindCutoffPoint(workCutoffTick);
+            AccumulateFutureWorkFromAllWorkers();
+            SplitOutWorkForNextTick();
+        }
 
-            vector<WorkItem<OPERATORTYPE>> workForTimeSlice(begin(totalSourceWork_), cutoffPoint);
-            totalSourceWork_.erase(begin(totalSourceWork_), cutoffPoint);
+        //
+        // After the worker threads are done, and only the controlling thread is running,
+        // it will call here to allow partitioning that reqires access to shared memory.
+        //
+        virtual unsigned long int SingleThreadPartitionStep() override
+        {
 #ifndef NOLOG
-            if (!workForTimeSlice.empty())
-            {
-                context_.Logger.Logger() << "Partitioning found " << workForTimeSlice.size() << " work items for tick " << workCutoffTick << ", leaving " << totalSourceWork_.size() << " for future ticks\n";
-                context_.Logger.Logit();
-            }
+            context_.Logger.Logger() << "Accumulating next tick work from all workers and partitioning to all workers\n";
+            context_.Logger.Logit();
 #endif
 
-            auto totalWork = workForTimeSlice.size();
-            context_.TotalWork += totalWork;
-            ++context_.Iterations;
-
-            CaptureWorkForEachThread(workForTimeSlice);
-
-            return totalWork;
+            AccumulateWorkForNextTickFromAllWorkers();
+            return PartitionWorkForNextTickToAllWorkers();
         }
 
         // Expose some internal methods to derived classes to allow for testing.
     protected:
-        void AccumulateWorkFromAllWorkers()
+        //
+        // Accumulate all future work (work that is scheduled later than the upcoming tick)
+        // from all worker threads, as it was created in the previous tick, into the work backlog.  
+        // In the current tick, the worker threads are using the current buffer, 
+        // so the other buffer is free for us to access read/write.
+        // NOTE: This may run concurrently with the worker threads.
+        //
+        void AccumulateFutureWorkFromAllWorkers()
         {
             for (auto& sourceWorker : context_.Workers)
             {
-                auto& sourceWork = sourceWorker->GetContext().WorkForNextThread;
+                // As the partitioner, use the opposite buffer from the current one.
+                auto& sourceWork = 
+                    (sourceWorker->GetContext().CurrentBuffer == CurrentBufferType::Buffer2Current) ? 
+                        sourceWorker->GetContext().WorkForFutureTicks1 : 
+                        sourceWorker->GetContext().WorkForFutureTicks2;
                 totalSourceWork_.insert(
                     end(totalSourceWork_), 
                     begin(sourceWork), 
@@ -89,7 +104,10 @@ namespace embeddedpenguins::modelengine
                 sourceWork.clear();
             }
 
-            auto& externalSourceWork = context_.ExternalWorkSource.WorkForNextThread;
+            auto& externalSourceWork = 
+                (context_.ExternalWorkSource.CurrentBuffer == CurrentBufferType::Buffer2Current) ? 
+                    context_.ExternalWorkSource.WorkForFutureTicks1 : 
+                    context_.ExternalWorkSource.WorkForFutureTicks2;
             totalSourceWork_.insert(
                 end(totalSourceWork_), 
                 begin(externalSourceWork), 
@@ -97,8 +115,110 @@ namespace embeddedpenguins::modelengine
             externalSourceWork.clear();
         }
 
-        typename vector<WorkItem<OPERATORTYPE>>::iterator FindCutoffPoint(unsigned long long int workCutoffTick)
+        //
+        // The work backlog has work from all previous ticks, scheduled for a specific tick.
+        // Collect any work scheduled for the next tick, and split it out from the work backlog.
+        // NOTE: This may run concurrently with the worker threads.
+        //
+        void SplitOutWorkForNextTick()
         {
+            auto cutoffPoint = FindCutoffPoint();
+
+            workForNextTick_.clear();
+            workForNextTick_.insert(
+                end(workForNextTick_), 
+                begin(totalSourceWork_), 
+                cutoffPoint);
+            totalSourceWork_.erase(begin(totalSourceWork_), cutoffPoint);
+        }
+
+        //
+        // Accumulate all next-tick work from all worker threads, as it was created in the 
+        // just-completed current tick.  There is only one buffer per worker thread for next-tick
+        // work.
+        // NOTE: This MUST NOT run concurrently with the worker threads.
+        //
+        void AccumulateWorkForNextTickFromAllWorkers()
+        {
+            for (auto& worker : context_.Workers)
+            {
+                auto& workForTick1 = worker->GetContext().WorkForTick1;
+                workForNextTick_.insert(
+                    end(workForNextTick_), 
+                    begin(workForTick1), 
+                    end(workForTick1));
+
+                workForTick1.clear();
+            }
+
+            auto& externalworkForTick1 = context_.ExternalWorkSource.WorkForTick1;
+            workForNextTick_.insert(
+                end(workForNextTick_), 
+                begin(externalworkForTick1), 
+                end(externalworkForTick1));
+
+            externalworkForTick1.clear();
+#ifndef NOLOG
+            if (!workForNextTick_.empty())
+            {
+                context_.Logger.Logger() << "Partitioning found " << workForNextTick_.size() << " work items for tick " << context_.Iterations + 1 << ", leaving " << totalSourceWork_.size() << " for future ticks\n";
+                context_.Logger.Logit();
+            }
+#endif
+        }
+
+        //
+        // The work for next tick contains work from all previous ticks split
+        // out from the work backlog, plus any work newly-generated by the workers
+        // in the current tick.
+        // Sort by index and partition to workers for next tick.
+        // NOTE: This MUST NOT run concurrently with the worker threads.
+        //
+        unsigned long int PartitionWorkForNextTickToAllWorkers()
+        {
+            auto totalWork = workForNextTick_.size();
+            context_.TotalWork += totalWork;
+            ++context_.Iterations;
+
+#ifndef NOLOG
+            context_.Logger.Logger() << "PartitionWorkForNextTickToAllWorkers starting sort\n";
+            context_.Logger.Logit();
+#endif
+            std::sort(
+                std::execution::par,
+                begin(workForNextTick_), 
+                end(workForNextTick_) , 
+                [](const WorkItem<OPERATORTYPE>& lhs, const WorkItem<OPERATORTYPE>& rhs){ 
+                    return lhs.Operator.Index < rhs.Operator.Index;
+            });
+
+#ifndef NOLOG
+            context_.Logger.Logger() << "PartitionWorkForNextTickToAllWorkers allocating segments to worker threads\n";
+            context_.Logger.Logit();
+#endif
+
+            auto segmentSize = workForNextTick_.size() / context_.WorkerCount;
+            if (segmentSize < 1) segmentSize = 1;
+
+            auto segmentBegin = begin(workForNextTick_);
+
+            for (auto workerIndex = 0; workerIndex < context_.Workers.size(); workerIndex++)
+            {
+                auto segmentEnd = FindSegmentEnd(workForNextTick_, segmentSize, segmentBegin, workerIndex);
+
+                auto& targetWorker = context_.Workers[workerIndex];
+                WorkerContextOp<OPERATORTYPE, RECORDTYPE> contextOp(targetWorker->GetContext());
+                contextOp.CaptureWorkForThread(segmentBegin, segmentEnd);
+
+                segmentBegin = segmentEnd;
+            }
+
+            return totalWork;
+        }
+
+        typename vector<WorkItem<OPERATORTYPE>>::iterator FindCutoffPoint()
+        {
+            auto workCutoffTick = context_.Iterations + 1;
             auto cutoffPoint = std::partition(
                 totalSourceWork_.begin(), 
                 totalSourceWork_.end(), 
@@ -107,42 +227,6 @@ namespace embeddedpenguins::modelengine
             });
 
             return cutoffPoint;
-        }
-
-        void CaptureWorkForEachThread(vector<WorkItem<OPERATORTYPE>>& workForTimeSlice)
-        {
-#ifndef NOLOG
-            context_.Logger.Logger() << "CaptureWorkForEachThread starting sort\n";
-            context_.Logger.Logit();
-#endif
-            std::sort(
-                std::execution::par,
-                begin(workForTimeSlice), 
-                end(workForTimeSlice) , 
-                [](const WorkItem<OPERATORTYPE>& lhs, const WorkItem<OPERATORTYPE>& rhs){ 
-                    return lhs.Operator.Index < rhs.Operator.Index;
-            });
-
-#ifndef NOLOG
-            context_.Logger.Logger() << "CaptureWorkForEachThread allocating segments to worker threads\n";
-            context_.Logger.Logit();
-#endif
-
-            auto segmentSize = workForTimeSlice.size() / context_.WorkerCount;
-            if (segmentSize < 1) segmentSize = 1;
-
-            auto segmentBegin = begin(workForTimeSlice);
-
-            for (auto workerIndex = 0; workerIndex < context_.Workers.size(); workerIndex++)
-            {
-                auto segmentEnd = FindSegmentEnd(workForTimeSlice, segmentSize, segmentBegin, workerIndex);
-
-                auto& targetWorker = context_.Workers[workerIndex];
-                WorkerContextOp<OPERATORTYPE, RECORDTYPE> contextOp(targetWorker->GetContext());
-                contextOp.CaptureWorkForThread(segmentBegin, segmentEnd);
-
-                segmentBegin = segmentEnd;
-            }
         }
 
         typename vector<WorkItem<OPERATORTYPE>>::iterator FindSegmentEnd(

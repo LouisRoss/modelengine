@@ -2,6 +2,8 @@ IDIR=../../../include
 ILDIR=../include
 CC=g++
 CFLAGS=-I$(IDIR) -I$(ILDIR) -pthread -fpic -std=c++17
+LFLAGS=-pthread -fpic -std=c++17
+LOG=-DNOLOG
 
 ODIR=obj
 BDIR=../bin
@@ -20,18 +22,23 @@ _LOCALDEPS = KeyListener.h
 LOCALDEPS = $(patsubst %,./%,$(_LOCALDEPS))
 
 $(ODIR)/%.o: %.cpp $(DEPS) $(LIFEDEPS) $(LOCALDEPS)
-	$(CC) -c -o $@ $< $(CFLAGS)
+	$(CC) -c -o $@ $< $(CFLAGS) $(LOG)
 
 all: $(BDIR)/ModelLifeInitializer.so $(BDIR)/LifeModel
 .PHONY: all
 
+log:
+	make LOG=""
+
+.PHONY: log
+
 $(BDIR)/ModelLifeInitializer.so: $(ODIR)/ModelLifeInitializer.o
-	$(CC) -shared -o $@ $^ $(CFLAGS) $(LIBS)
+	$(CC) -shared -o $@ $^ $(LFLAGS) $(LIBS)
 
 $(BDIR)/LifeModel: $(ODIR)/LifeModel.o
-	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
+	$(CC) -o $@ $^ $(LFLAGS) $(LIBS)
 
 .PHONY: clean
 
 clean:
-	rm -f $(ODIR)/*.o *~ core $(IDIR)/*~
+	rm -f $(ODIR)/*.o

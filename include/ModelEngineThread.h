@@ -130,8 +130,12 @@ namespace embeddedpenguins::modelengine
                 quit = WaitForWorkOrQuit();
                 if (!quit)
                 {
+                    StartWorkWithAllWorkers();
+                    partitioner_->ConcurrentPartitionStep();
+                    WaitForAllWorkersToCompleteWork();
                     PartitionWork();
-                    DoWorkWithAllWorkers();
+
+                    SwitchWorkingBuffersForAllWorkers();
                 } 
             }
             while (!quit);
@@ -158,31 +162,7 @@ namespace embeddedpenguins::modelengine
             return true;
         }
 
-        void PartitionWork()
-        {
-            auto partitionStartTime = high_resolution_clock::now();
-#ifndef NOLOG
-            context_.Logger.Logger() << "Starting partition phase\n";
-            context_.Logger.Logit();
-#endif
-
-            auto workCutoffTick = numeric_limits<unsigned long long int>::max();
-            if (waiter_) workCutoffTick = waiter_->GetWorkCutoffTick();
-
-            unsigned long int workForTick {};
-            {
-                lock_guard<mutex> lock(context_.PartitioningMutex);
-                if (partitioner_) workForTick = partitioner_->Partition(workCutoffTick);
-            }
-
-            if (workForTick > 0)
-            {
-                auto partitionElapsed = high_resolution_clock::now() - partitionStartTime;
-                context_.PartitionTime += duration_cast<microseconds>(partitionElapsed);
-            }
-        }
-
-        void DoWorkWithAllWorkers()
+        void StartWorkWithAllWorkers()
         {
 #ifndef NOLOG
             if (context_.LoggingLevel == LogLevel::Diagnostic)
@@ -193,7 +173,7 @@ namespace embeddedpenguins::modelengine
 
                 if (workPresent)
                 {
-                    context_.Logger.Logger() << "Starting work phase [ ";
+                    context_.Logger.Logger() << "Starting worker threads [ ";
                     for (auto& worker : context_.Workers)
                     {
                         auto& workForThread = worker->GetContext().WorkForThread;
@@ -217,15 +197,52 @@ namespace embeddedpenguins::modelengine
             }
             else if (context_.LoggingLevel != LogLevel::None)
             {
-                context_.Logger.Logger() << "Starting work phase\n";
+                context_.Logger.Logger() << "Starting worker threads\n";
                 context_.Logger.Logit();
             }
 #endif
 
             for (auto& worker : context_.Workers)
                 worker->Scan(WorkCode::Scan);
+        }
+
+        void WaitForAllWorkersToCompleteWork()
+        {
             for (auto& worker : context_.Workers)
                 worker->WaitForPreviousScan();
+
+#ifndef NOLOG
+            context_.Logger.Logger() << "Worker threads complete\n";
+            context_.Logger.Logit();
+#endif
+        }
+
+        void PartitionWork()
+        {
+            auto partitionStartTime = high_resolution_clock::now();
+
+            unsigned long int workForTick {};
+            {
+                lock_guard<mutex> lock(context_.PartitioningMutex);
+                workForTick = partitioner_->SingleThreadPartitionStep();
+            }
+
+            if (workForTick > 0)
+            {
+                auto partitionElapsed = high_resolution_clock::now() - partitionStartTime;
+                context_.PartitionTime += duration_cast<microseconds>(partitionElapsed);
+            }
+        }
+
+        void SwitchWorkingBuffersForAllWorkers()
+        {
+            for (auto& sourceWorker : context_.Workers)
+            {
+                auto& currentBuffer = sourceWorker->GetContext().CurrentBuffer;
+                currentBuffer = (currentBuffer == CurrentBufferType::Buffer1Current ? 
+                        CurrentBufferType::Buffer2Current : 
+                        CurrentBufferType::Buffer1Current);
+            }
         }
 
         void Cleanup()

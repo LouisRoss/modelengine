@@ -25,8 +25,6 @@ namespace embeddedpenguins::modelengine
         time_point nextScheduledTick_;
 
     public:
-        virtual unsigned long long int GetWorkCutoffTick() override { return context_.Iterations + 1; }
-
         ConstantTickWaiter(ModelEngineContext<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, RECORDTYPE>& context) :
             context_(context),
             contextOp_(context),
