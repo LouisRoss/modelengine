@@ -1,7 +1,9 @@
 IDIR=../../../include
 ILDIR=../include
 CC=g++
-CFLAGS=-I$(IDIR) -I$(ILDIR) -pthread -fpic -std=c++17 -DNOLOG
+CFLAGS=-I$(IDIR) -I$(ILDIR) -pthread -fpic -std=c++17
+LFLAGS=-fpic -pthread -std=c++17
+LOG=-DNOLOG
 
 ODIR=obj
 BDIR=../bin
@@ -25,11 +27,15 @@ $(ODIR)/%.o: %.cpp $(DEPS) $(LIFEDEPS) $(LOCALDEPS)
 all: $(BDIR)/ParticleModelInitializer.so $(BDIR)/ParticleModel
 .PHONY: all
 
+log:
+	make LOG=""
+.PHONY: log
+
 $(BDIR)/ParticleModelInitializer.so: $(ODIR)/ParticleModelInitializer.o
-	$(CC) -shared -o $@ $^ $(CFLAGS) $(LIBS)
+	$(CC) -shared -o $@ $^ $(LFLAGS) $(LIBS)
 
 $(BDIR)/ParticleModel: $(ODIR)/ParticleModel.o
-	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
+	$(CC) -o $@ $^ $(LFLAGS) $(LIBS)
 
 .PHONY: clean
 

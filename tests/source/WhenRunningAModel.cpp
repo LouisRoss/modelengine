@@ -208,7 +208,14 @@ namespace test::embeddedpenguins::modelengine::infrastructure
     // Assert
     auto workerCount = modelEngine_->GetWorkerCount();
     auto iterations = modelEngine_->GetIterations();
-    auto baseIncrement = workerCount * (iterations - 1) - 6;
+
+    // The first iteration is the initialization.
+    // The second iteration does no recorded work, but signals one work item for each Id.
+    // The third iteration does one work item per thread, and signals 7 work items per Id.
+    // The subsequent iterations - 3 iterations do 7 work items per thread and signal 7 work items per Id.
+    // A work item adds its id to the index in the model for each work item.
+    // So, the expected number in each index is Id * (workerCount * (iterations - 3) + 1)
+    auto baseIncrement = workerCount * (iterations - 3) + 1;
     auto index = 0;
     auto span = model_->size() / workerCount;
 

@@ -38,6 +38,11 @@ namespace test::embeddedpenguins::modelengine::infrastructure
         void SetUp() override { }
         void TearDown() override
         {
+            Log::Merge(context_.Logger);
+            cout << "Writing log file to " << context_.LogFile << "... " << std::flush;
+            Log::Print(context_.LogFile.c_str());
+            cout << "Done\n";
+
             for (auto& worker : context_.Workers)
                 worker->Join();
         }
@@ -46,6 +51,8 @@ namespace test::embeddedpenguins::modelengine::infrastructure
     // Protected internal state is exposed to this derived class.
     class TestAdaptiveWidthPartitioner : public AdaptiveWidthPartitioner<TestNode, TestOperation, TestImplementation, TestRecord>
     {
+        unsigned long int collectedWorkForWorkers_ {};
+
     public:
         TestAdaptiveWidthPartitioner(ModelEngineContext<TestNode, TestOperation, TestImplementation, TestRecord>& context) :
             AdaptiveWidthPartitioner(context)
@@ -54,43 +61,65 @@ namespace test::embeddedpenguins::modelengine::infrastructure
         }
 
         vector<WorkItem<TestOperation>>& GetTotalSourceWork() { return totalSourceWork_; }
+        vector<WorkItem<TestOperation>>& GetWorkForNextTick() { return workForNextTick_; };
+        const unsigned long int CollectedWorkForWorkers() const { return collectedWorkForWorkers_; }
+        unsigned long int& CollectedWorkForWorkers() { return collectedWorkForWorkers_; }
 
-        typename vector<WorkItem<TestOperation>>::iterator FindCutoffPoint(unsigned long long int workCutoffTime)
+        typename vector<WorkItem<TestOperation>>::iterator FindCutoffPoint()
         {
-            return AdaptiveWidthPartitioner::FindCutoffPoint(workCutoffTime);
+            return AdaptiveWidthPartitioner::FindCutoffPoint();
         }
 
-        void AccumulateWorkFromAllWorkers() { AdaptiveWidthPartitioner::AccumulateWorkFromAllWorkers(); }
+        void AccumulateWorkForNextTickFromAllWorkers() { AdaptiveWidthPartitioner::AccumulateWorkForNextTickFromAllWorkers(); }
 
-        void LoadWorkWithConsecutiveIndexes(int indexMax, unsigned long long int workTime)
+        unsigned long int Partition(unsigned int count = 1) 
         {
-            LoadWorkWithSpacedIndexes(indexMax, workTime, 1);
+            unsigned long int totalWork {};
+            for (auto _ = count; _--;)
+            {
+                AdaptiveWidthPartitioner::ConcurrentPartitionStep();
+                totalWork += AdaptiveWidthPartitioner::SingleThreadPartitionStep();
+                ++context_.Iterations;
+
+                // WorkForThread will be cleared on the next iteration, so accumulate here.
+                for (auto& worker : context_.Workers)
+                {
+                    collectedWorkForWorkers_ += worker->GetContext().WorkForThread.size();
+                }
+            }
+
+            return totalWork;
         }
 
-        void LoadWorkWithSpacedIndexes(int indexMax, unsigned long long int workTime, int span)
+        void LoadWorkWithConsecutiveIndexes(int indexMax, unsigned long long int workTick)
+        {
+            LoadWorkWithSpacedIndexes(indexMax, workTick, 1);
+        }
+
+        void LoadWorkWithSpacedIndexes(int indexMax, unsigned long long int workTick, int span)
         {
             totalSourceWork_.clear();
             for (int index = 1; index <= indexMax; index++)
             {
-                totalSourceWork_.push_back(WorkItem<TestOperation> { workTime, TestOperation(index * span) });
+                totalSourceWork_.push_back(WorkItem<TestOperation> { workTick, TestOperation(index * span) });
             }
         }
 
-        void AddWorkWithSameIndex(int index, unsigned long long int workTime, int count)
+        void AddWorkWithSameIndex(int index, unsigned long long int workTick, int count)
         {
             for (int _ = count; _; _--)
             {
-                totalSourceWork_.push_back(WorkItem<TestOperation> { workTime, TestOperation(index) });
+                totalSourceWork_.push_back(WorkItem<TestOperation> { workTick, TestOperation(index) });
             }
         }
 
-        void LoadWorkWithSpacedIndexesAndTimes(int indexMax, int span, unsigned long long int workTime, unsigned long long int timeSpan)
+        void LoadWorkWithSpacedIndexesAndTimes(int indexMax, int span, unsigned long long int workTick, unsigned long long int tickSpan)
         {
             totalSourceWork_.clear();
-            auto execTime = workTime;
-            for (int index = 1; index <= indexMax; index++, execTime += timeSpan)
+            auto execTick = workTick;
+            for (int index = 1; index <= indexMax; index++, execTick += tickSpan)
             {
-                totalSourceWork_.push_back(WorkItem<TestOperation> { execTime, TestOperation(index * span) });
+                totalSourceWork_.push_back(WorkItem<TestOperation> { execTick, TestOperation(index * span) });
             }
         }
 
@@ -100,10 +129,10 @@ namespace test::embeddedpenguins::modelengine::infrastructure
     {
         // Arrange
         TestAdaptiveWidthPartitioner partitioner(context_);
-        partitioner.LoadWorkWithConsecutiveIndexes(std::thread::hardware_concurrency() - 1, now_ + 10);
+        partitioner.LoadWorkWithConsecutiveIndexes(std::thread::hardware_concurrency() - 1, now_);
 
         // Act
-        partitioner.Partition(now_ + 20);
+        partitioner.Partition();
 
         // Assert
         EXPECT_EQ(partitioner.GetTotalSourceWork().size(), 0);
@@ -116,7 +145,7 @@ namespace test::embeddedpenguins::modelengine::infrastructure
         partitioner.LoadWorkWithConsecutiveIndexes(std::thread::hardware_concurrency() - 1, now_ + 10);
 
         // Act
-        partitioner.Partition(now_ + 5);
+        partitioner.Partition();
 
         // Assert
         EXPECT_EQ(partitioner.GetTotalSourceWork().size(), std::thread::hardware_concurrency() - 1);
@@ -130,7 +159,7 @@ namespace test::embeddedpenguins::modelengine::infrastructure
         partitioner.LoadWorkWithConsecutiveIndexes(std::thread::hardware_concurrency() - 1, now_ + 10);
 
         // Act
-        partitioner.Partition(now_ + 20);
+        partitioner.Partition(now_ + 11);
 
         // Assert
         EXPECT_EQ(partitioner.GetTotalSourceWork().size(), 0);
@@ -146,7 +175,7 @@ namespace test::embeddedpenguins::modelengine::infrastructure
         partitioner.LoadWorkWithSpacedIndexes(std::thread::hardware_concurrency() - 1, now_ + 10, 1'000);
 
         // Act
-        partitioner.Partition(now_ + 20);
+        partitioner.Partition(now_ + 11);
 
         // Assert
         EXPECT_EQ(partitioner.GetTotalSourceWork().size(), 0);
@@ -163,7 +192,7 @@ namespace test::embeddedpenguins::modelengine::infrastructure
         partitioner.AddWorkWithSameIndex(1, now_ + 10, 9);
 
         // Act
-        partitioner.Partition(now_ + 20);
+        partitioner.Partition(now_ + 11);
 
         // Assert
         EXPECT_EQ(partitioner.GetTotalSourceWork().size(), 0);
@@ -187,7 +216,7 @@ namespace test::embeddedpenguins::modelengine::infrastructure
         partitioner.AddWorkWithSameIndex(std::thread::hardware_concurrency() + 2, now_ + 10, 1);
 
         // Act
-        partitioner.Partition(now_ + 20);
+        partitioner.Partition(now_ + 11);
 
         // Assert
         EXPECT_EQ(partitioner.GetTotalSourceWork().size(), 0);
@@ -208,7 +237,8 @@ namespace test::embeddedpenguins::modelengine::infrastructure
         partitioner.LoadWorkWithSpacedIndexesAndTimes(std::thread::hardware_concurrency() - 1, 10, now_, 10);
 
         // Act
-        auto cutoff = partitioner.FindCutoffPoint(now_ + 35);
+        context_.Iterations += 31;
+        auto cutoff = partitioner.FindCutoffPoint();
 
         // Assert
         EXPECT_EQ(cutoff - begin(partitioner.GetTotalSourceWork()), 4);
@@ -220,7 +250,8 @@ namespace test::embeddedpenguins::modelengine::infrastructure
         TestAdaptiveWidthPartitioner partitioner(context_);
 
         // Act
-        auto cutoff = partitioner.FindCutoffPoint(now_ + 1);
+        context_.Iterations += 1;
+        auto cutoff = partitioner.FindCutoffPoint();
 
         // Assert
         EXPECT_EQ(cutoff, end(partitioner.GetTotalSourceWork()));
@@ -237,7 +268,8 @@ namespace test::embeddedpenguins::modelengine::infrastructure
         partitioner.AddWorkWithSameIndex(1, now_ + 5, 1);
 
         // Act
-        auto cutoff = partitioner.FindCutoffPoint(now_ + 6);
+        context_.Iterations += 6;
+        auto cutoff = partitioner.FindCutoffPoint();
 
         // Assert
         EXPECT_EQ(cutoff - begin(partitioner.GetTotalSourceWork()), 2);
@@ -252,7 +284,8 @@ namespace test::embeddedpenguins::modelengine::infrastructure
         partitioner.LoadWorkWithSpacedIndexesAndTimes(std::thread::hardware_concurrency() - 1, 10, now_, 10);
 
         // Act
-        auto cutoff = partitioner.FindCutoffPoint(now_ + 40);
+        context_.Iterations += 39;
+        auto cutoff = partitioner.FindCutoffPoint();
 
         // Assert
         EXPECT_EQ(cutoff - begin(partitioner.GetTotalSourceWork()), 4);
@@ -265,15 +298,15 @@ namespace test::embeddedpenguins::modelengine::infrastructure
         TestAdaptiveWidthPartitioner partitioner(context_);
         for (auto& worker : context_.Workers)
             for (int i = 0; i < context_.Workers.size(); i++)
-                worker->GetContext().WorkForNextThread.push_back(WorkItem<TestOperation> { now_, TestOperation(i) });
+                worker->GetContext().WorkForTick1.push_back(WorkItem<TestOperation> { now_, TestOperation(i) });
 
         // Act
-        partitioner.AccumulateWorkFromAllWorkers();
+        partitioner.AccumulateWorkForNextTickFromAllWorkers();
 
         // Assert
-        EXPECT_EQ(partitioner.GetTotalSourceWork().size(), context_.Workers.size() * context_.Workers.size());
+        EXPECT_EQ(partitioner.GetWorkForNextTick().size(), context_.Workers.size() * context_.Workers.size());
         for (auto& worker : context_.Workers)
-            EXPECT_EQ(worker->GetContext().WorkForNextThread.size(), 0);
+            EXPECT_EQ(worker->GetContext().WorkForTick1.size(), 0);
     }
 
     TEST_F(WhenPartitioningWork, WorkerWorkIsPartitionedCorrectly)
@@ -283,7 +316,7 @@ namespace test::embeddedpenguins::modelengine::infrastructure
         TestAdaptiveWidthPartitioner partitioner(context_);
         for (auto& worker : context_.Workers)
             for (int i = 0; i < context_.Workers.size(); i++)
-                worker->GetContext().WorkForNextThread.push_back(WorkItem<TestOperation> { now_, TestOperation(i + 1) });
+                worker->GetContext().WorkForTick1.push_back(WorkItem<TestOperation> { now_, TestOperation(i + 1) });
 
         // Act
         partitioner.Partition(now_ + 1);
@@ -302,6 +335,9 @@ namespace test::embeddedpenguins::modelengine::infrastructure
         // Arrange
         ModelEngineContextOp<TestNode, TestOperation, TestImplementation, TestRecord>(context_).CreateWorkers(model_);
         TestAdaptiveWidthPartitioner partitioner(context_);
+
+        // Acting as a worker thread, use buffer 1 to insert into.
+        context_.ExternalWorkSource.CurrentBuffer = CurrentBufferType::Buffer1Current;
         auto expectedWorkItemCount {0};
         for (int i = 0; i < context_.Workers.size() * 100; i+=10)
         {
@@ -319,15 +355,14 @@ namespace test::embeddedpenguins::modelengine::infrastructure
         }
 
         // Act
-        partitioner.Partition(now_ + 2000);
+        partitioner.CollectedWorkForWorkers() = 0;
+
+        // Acting as a model thread, use buffer 1 to extract from.
+        context_.ExternalWorkSource.CurrentBuffer = CurrentBufferType::Buffer2Current;
+        auto totalWork = partitioner.Partition(now_ + 2000);
 
         // Assert
-        auto actualWorkItemCount {0};
-        for (auto& worker : context_.Workers)
-        {
-            actualWorkItemCount += worker->GetContext().WorkForThread.size();
-        }
-
-        EXPECT_EQ(actualWorkItemCount, expectedWorkItemCount);
+        EXPECT_EQ(totalWork, expectedWorkItemCount);
+        EXPECT_EQ(partitioner.CollectedWorkForWorkers(), expectedWorkItemCount);
     }
 }

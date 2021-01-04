@@ -28,7 +28,12 @@ namespace embeddedpenguins::modelengine
 
         }
 
-        virtual unsigned long int Partition(unsigned long long int _) override
+        virtual void ConcurrentPartitionStep() override
+        {
+
+        }
+
+        virtual unsigned long int SingleThreadPartitionStep() override
         {
             auto totalWork = AccumulateWorkfromWorkers();
 
@@ -56,9 +61,13 @@ namespace embeddedpenguins::modelengine
 
         void DistributeWorkToWorkers()
         {
-            for (auto& sourceslice : context_.Workers)
+            for (auto& sourceWorker : context_.Workers)
             {
-                for (auto& sourcework : sourceslice->GetContext().WorkForNextThread)
+                auto& workForFutureTicks = (sourceWorker->GetContext().CurrentBuffer == CurrentBufferType::Buffer2Current) ? 
+                        sourceWorker->GetContext().WorkForFutureTicks1 : 
+                        sourceWorker->GetContext().WorkForFutureTicks2;
+                for (auto& sourcework : workForFutureTicks)
+                //for (auto& sourcework : sourceWorker->GetContext().WorkForNextThread)
                 {
                     for (auto& targetslice : context_.Workers)
                     {
@@ -68,7 +77,7 @@ namespace embeddedpenguins::modelengine
                     }
                 }
 
-                sourceslice->GetContext().WorkForNextThread.clear();
+                workForFutureTicks.clear();
             }
         }
     };

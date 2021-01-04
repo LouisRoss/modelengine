@@ -23,6 +23,12 @@ namespace embeddedpenguins::modelengine::threads
     using embeddedpenguins::modelengine::Recorder;
     using embeddedpenguins::modelengine::WorkItem;
 
+    enum class CurrentBufferType
+    {
+        Buffer1Current,
+        Buffer2Current
+    };
+
     //
     // Carry the public information defining the worker.
     // This consists primarily of synchronization between the worker and its thread.
@@ -49,7 +55,10 @@ namespace embeddedpenguins::modelengine::threads
         unsigned long long int RangeBegin{0LL};
         unsigned long long int RangeEnd{0LL};
         vector<WorkItem<OPERATORTYPE>> WorkForThread;
-        vector<WorkItem<OPERATORTYPE>> WorkForNextThread;
+        vector<WorkItem<OPERATORTYPE>> WorkForTick1;
+        CurrentBufferType CurrentBuffer { CurrentBufferType::Buffer1Current };
+        vector<WorkItem<OPERATORTYPE>> WorkForFutureTicks1;
+        vector<WorkItem<OPERATORTYPE>> WorkForFutureTicks2;
 
         WorkerContext(unsigned long long int& iterations, microseconds& enginePeriod, LogLevel& loggingLevel) : 
             Iterations(iterations), 

@@ -43,9 +43,21 @@ namespace embeddedpenguins::modelengine::threads
         //
         void operator() (const OPERATORTYPE& work, int tickDelay = 1)
         {
-            auto delay = std::max<int>(1, tickDelay);
-            delay--;
-            context_.WorkForNextThread.push_back(WorkItem<OPERATORTYPE> { context_.Iterations + delay, work });
+            if (tickDelay <= 1)
+            {
+                context_.WorkForTick1.push_back(WorkItem<OPERATORTYPE> { context_.Iterations + 1, work });
+                return;
+            }
+
+            // As the worker thread, use the current buffer.  The partitioner will use the other one.
+            if (context_.CurrentBuffer == CurrentBufferType::Buffer1Current)
+            {
+                context_.WorkForFutureTicks1.push_back(WorkItem<OPERATORTYPE> { context_.Iterations + tickDelay - 1, work });
+            }
+            else
+            {
+                context_.WorkForFutureTicks2.push_back(WorkItem<OPERATORTYPE> { context_.Iterations + tickDelay - 1, work });
+            }
         }
     };
 }

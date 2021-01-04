@@ -23,11 +23,14 @@
             "problemMatcher": [
                 "$gcc"
             ],
-            "group": "build"
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
         },
         {
             "type": "shell",
-            "label": "C/C++: g++-9 build active file",
+            "label": "C/C++: build active file",
             "command": "/usr/bin/g++-9",
             "args": [
                 "-g",
@@ -41,10 +44,7 @@
             "problemMatcher": [
                 "$gcc"
             ],
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            }
+            "group": "build"
         }
     ],
     "version": "2.0.0"

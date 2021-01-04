@@ -55,10 +55,10 @@ namespace test::embeddedpenguins::modelengine::infrastructure
         // act
         callback.operator()(TestOperation(0), 25);
 
-        ASSERT_EQ(context.WorkForNextThread.size(), 1);
+        ASSERT_EQ(context.WorkForFutureTicks1.size(), 1);
 
-        auto expected = 25;
-        auto actual = context.WorkForNextThread[0].Tick;
+        auto expected = 24;
+        auto actual = context.WorkForFutureTicks1[0].Tick;
         EXPECT_EQ(expected, actual);
     }
 }
