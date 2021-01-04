@@ -35,10 +35,9 @@ namespace embeddedpenguins::modelengine
     template<class NODETYPE, class OPERATORTYPE, class IMPLEMENTATIONTYPE, class RECORDTYPE>
     class AdaptiveWidthPartitioner : public IModelEnginePartitioner
     {
-        ModelEngineContext<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, RECORDTYPE>& context_;
-
         // Expose some internal state to derived classes to allow for testing.
     protected:
+        ModelEngineContext<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, RECORDTYPE>& context_;
         vector<WorkItem<OPERATORTYPE>> totalSourceWork_ {};
         vector<WorkItem<OPERATORTYPE>> workForNextTick_ {};
 
@@ -56,7 +55,7 @@ namespace embeddedpenguins::modelengine
         virtual void ConcurrentPartitionStep() override
         {
 #ifndef NOLOG
-            context_.Logger.Logger() << "Accumulating future work from all workers and Splitting out work for next tick\n";
+            context_.Logger.Logger() << "Tick " << context_.Iterations << ": Accumulating future work from all workers and Splitting out work for next tick\n";
             context_.Logger.Logit();
 #endif
 
@@ -71,7 +70,7 @@ namespace embeddedpenguins::modelengine
         virtual unsigned long int SingleThreadPartitionStep() override
         {
 #ifndef NOLOG
-            context_.Logger.Logger() << "Accumulating next tick work from all workers and partitioning to all workers\n";
+            context_.Logger.Logger() << "Tick " << context_.Iterations << ": Accumulating next tick work from all workers and partitioning to all workers\n";
             context_.Logger.Logit();
 #endif
 

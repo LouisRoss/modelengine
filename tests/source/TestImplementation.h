@@ -60,19 +60,19 @@ namespace test::embeddedpenguins::modelengine::infrastructure
         }
 
         void Initialize(Log& log, Recorder<TestRecord>& record, 
-            unsigned long long int ticksSinceEpoch, 
-            ProcessCallback<TestOperation, TestRecord>& callback)
+                        unsigned long long int tickNow, 
+                        ProcessCallback<TestOperation, TestRecord>& callback)
         {
             callback(TestOperation(1));
-            log.Logger() << "Creating initial work for index " << 1 << " with tick " << 1 << '\n';
+            log.Logger() << "Creating initial work for index " << 1 << " with tick " << tickNow + 1 << '\n';
             log.Logit();
         }
 
         void Process(Log& log, Recorder<TestRecord>& record, 
-        unsigned long long int ticksSinceEpoch, 
-        typename vector<WorkItem<TestOperation>>::iterator begin, 
-        typename vector<WorkItem<TestOperation>>::iterator end, 
-        ProcessCallback<TestOperation, TestRecord>& callback)
+                    unsigned long long int tickNow, 
+                    typename vector<WorkItem<TestOperation>>::iterator begin, 
+                    typename vector<WorkItem<TestOperation>>::iterator end, 
+                    ProcessCallback<TestOperation, TestRecord>& callback)
         {
             // Do work here.
             if (begin == end) return;
@@ -80,20 +80,20 @@ namespace test::embeddedpenguins::modelengine::infrastructure
             for (auto& work = begin; work != end; work++)
             {
                 model_[work->Operator.Index].Data += workerId_;
-                log.Logger() << "(" << work->Tick << ") Index " << work->Operator.Index << " set to " << model_[work->Operator.Index].Data << " in tick " << ticksSinceEpoch << '\n';
+                log.Logger() << "(" << work->Tick << ") Index " << work->Operator.Index << " set to " << model_[work->Operator.Index].Data << " in tick " << tickNow << '\n';
                 log.Logit();
             }
 
-            auto span = 5'000 / 7;
+            auto span = model_.size() / 7;
             auto index = 0LL;
             for (auto _ = 6; _--; index += span)
             {
-                callback(TestOperation(index), 0);
-                log.Logger() << "Creating work for index " << index << " with tick " << ticksSinceEpoch << '\n';
+                callback(TestOperation(index));
+                log.Logger() << "Creating work for index " << index << " with tick " << tickNow + 1 << '\n';
                 log.Logit();
             }
-            callback(TestOperation(4999), 0);
-            log.Logger() << "Creating work for index " << 4999 << " with tick " << ticksSinceEpoch << '\n';
+            callback(TestOperation(4999));
+            log.Logger() << "Creating work for index " << 4999 << " with tick " << tickNow + 1 << '\n';
             log.Logit();
         }
 
