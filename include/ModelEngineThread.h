@@ -138,6 +138,7 @@ namespace embeddedpenguins::modelengine
                     PartitionWork();
 
                     SwitchWorkingBuffersForAllWorkers();
+                    ++context_.Iterations;
                 } 
             }
             while (!quit);

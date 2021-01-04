@@ -79,6 +79,7 @@ namespace test::embeddedpenguins::modelengine::infrastructure
             {
                 AdaptiveWidthPartitioner::ConcurrentPartitionStep();
                 totalWork += AdaptiveWidthPartitioner::SingleThreadPartitionStep();
+                ++context_.Iterations;
 
                 // WorkForThread will be cleared on the next iteration, so accumulate here.
                 for (auto& worker : context_.Workers)

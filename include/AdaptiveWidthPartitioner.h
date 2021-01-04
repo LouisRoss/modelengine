@@ -177,7 +177,6 @@ namespace embeddedpenguins::modelengine
         {
             auto totalWork = workForNextTick_.size();
             context_.TotalWork += totalWork;
-            ++context_.Iterations;
 
 #ifndef NOLOG
             context_.Logger.Logger() << "PartitionWorkForNextTickToAllWorkers starting sort\n";
