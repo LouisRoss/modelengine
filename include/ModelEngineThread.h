@@ -85,6 +85,7 @@ namespace embeddedpenguins::modelengine
                 cout << "ModelEngine exception while running: " << e.what() << '\n';
             }
 
+            Log::Merge(context_.ExternalWorkSource.Logger);
             Log::Merge(context_.Logger);
             for (auto& worker : context_.Workers)
             {
@@ -130,6 +131,7 @@ namespace embeddedpenguins::modelengine
                 quit = WaitForWorkOrQuit();
                 if (!quit)
                 {
+                    lock_guard<mutex> lock(context_.PartitioningMutex);
                     StartWorkWithAllWorkers();
                     partitioner_->ConcurrentPartitionStep();
                     WaitForAllWorkersToCompleteWork();
@@ -221,12 +223,7 @@ namespace embeddedpenguins::modelengine
         {
             auto partitionStartTime = high_resolution_clock::now();
 
-            unsigned long int workForTick {};
-            {
-                lock_guard<mutex> lock(context_.PartitioningMutex);
-                workForTick = partitioner_->SingleThreadPartitionStep();
-            }
-
+            auto workForTick = partitioner_->SingleThreadPartitionStep();
             if (workForTick > 0)
             {
                 auto partitionElapsed = high_resolution_clock::now() - partitionStartTime;
@@ -243,6 +240,11 @@ namespace embeddedpenguins::modelengine
                         CurrentBufferType::Buffer2Current : 
                         CurrentBufferType::Buffer1Current);
             }
+
+            auto& currentExternalBuffer = context_.ExternalWorkSource.CurrentBuffer;
+            currentExternalBuffer = (currentExternalBuffer == CurrentBufferType::Buffer1Current ? 
+                    CurrentBufferType::Buffer2Current : 
+                    CurrentBufferType::Buffer1Current);
         }
 
         void Cleanup()
