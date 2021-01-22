@@ -19,9 +19,9 @@
 #include "ParticleSupport.h"
 #include "ParticleOperation.h"
 #include "ParticleNode.h"
+#include "ParticleModelCarrier.h"
 #include "ParticleRecord.h"
 
-//#define NOLOG
 namespace embeddedpenguins::particle::infrastructure
 {
     using std::cout;
@@ -46,7 +46,7 @@ namespace embeddedpenguins::particle::infrastructure
     class ParticleImplementation : public WorkerThread<ParticleOperation, ParticleImplementation, ParticleRecord>
     {
         int workerId_;
-        vector<ParticleNode>& model_;
+        ParticleModelCarrier carrier_;
         const json& configuration_;
 
         unsigned long int width_ { 100 };
@@ -65,9 +65,9 @@ namespace embeddedpenguins::particle::infrastructure
         // Allow the template library to pass in the model and configuration
         // to each worker thread that is created.
         //
-        ParticleImplementation(int workerId, vector<ParticleNode>& model, const json& configuration) :
+        ParticleImplementation(int workerId, ParticleModelCarrier carrier, const json& configuration) :
             workerId_(workerId),
-            model_(model),
+            carrier_(carrier),
             configuration_(configuration)
         {
             // Override the dimension defaults if configured.
@@ -158,7 +158,7 @@ namespace embeddedpenguins::particle::infrastructure
             unsigned long long int index, 
             ProcessCallback<ParticleOperation, ParticleRecord>& callback)
         {
-            auto& particleNode = model_[index];
+            auto& particleNode = carrier_.Model[index];
 
             auto [nextIndex, nextVerticalVector, nextHorizontalVector] = NewPositionAndVelocity(log, record, index, particleNode.VerticalVector, particleNode.HorizontalVector, particleNode.Gradient, callback);
 
@@ -190,7 +190,7 @@ namespace embeddedpenguins::particle::infrastructure
             ParticleType type,
             ProcessCallback<ParticleOperation, ParticleRecord>& callback)
         {
-            auto& particleNode = model_[index];
+            auto& particleNode = carrier_.Model[index];
 
             if (particleNode.Occupied)
             {

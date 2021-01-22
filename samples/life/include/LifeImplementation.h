@@ -17,9 +17,9 @@
 #include "LifeSupport.h"
 #include "LifeOperation.h"
 #include "LifeNode.h"
+#include "LifeModelCarrier.h"
 #include "LifeRecord.h"
 
-//#define NOLOG
 namespace embeddedpenguins::life::infrastructure
 {
     using std::cout;
@@ -50,7 +50,7 @@ namespace embeddedpenguins::life::infrastructure
     class LifeImplementation : public WorkerThread<LifeOperation, LifeImplementation, LifeRecord>
     {
         int workerId_;
-        vector<LifeNode>& model_;
+        LifeModelCarrier carrier_;
         const json& configuration_;
 
         unsigned long int width_ { 100 };
@@ -76,9 +76,9 @@ namespace embeddedpenguins::life::infrastructure
         // Allow the template library to pass in the model and configuration
         // to each worker thread that is created.
         //
-        LifeImplementation(int workerId, vector<LifeNode>& model, const json& configuration) :
+        LifeImplementation(int workerId, LifeModelCarrier carrier, const json& configuration) :
             workerId_(workerId),
-            model_(model),
+            carrier_(carrier),
             configuration_(configuration)
         {
             // Override the dimension defaults if configured.
@@ -184,7 +184,7 @@ namespace embeddedpenguins::life::infrastructure
             ProcessCallback<LifeOperation, LifeRecord>& callback)
         {
             auto aliveNextTick = ApplyRulesOfLife(cellIndex);
-            auto& lifeNode = model_[cellIndex];
+            auto& lifeNode = carrier_.Model[cellIndex];
 
             if (lifeNode.Alive != aliveNextTick)
             {
@@ -208,7 +208,7 @@ namespace embeddedpenguins::life::infrastructure
             unsigned long long int cellIndex, 
             ProcessCallback<LifeOperation, LifeRecord>& callback)
         {
-            auto& lifeNode = model_[cellIndex];
+            auto& lifeNode = carrier_.Model[cellIndex];
  
 #ifndef NOLOG
             log.Logger() << "Cell " << cellIndex << " propagating to " << (lifeNode.AliveNextTick ? "alive" : "dead") << '\n';
@@ -217,7 +217,7 @@ namespace embeddedpenguins::life::infrastructure
             lifeNode.Alive = lifeNode.AliveNextTick;
             record.Record(LifeRecord(LifeRecordType::Propagate, cellIndex, lifeNode));
 
-            LifeSupport(width_, height_).SignalAllSurroundingCellsToEvaluate(cellIndex, callback);
+            SignalAllSurroundingCellsToEvaluate(cellIndex, callback);
         }
 
         //
@@ -230,7 +230,7 @@ namespace embeddedpenguins::life::infrastructure
             for (unsigned short int pattern = 0; pattern < 512; pattern++)
             {
                 auto centerAlive = (pattern & 0x10) != 0;
-                auto surroundingCount = LifeSupport(width_, height_).GetSurroundingCount(pattern & ~0x10);
+                auto surroundingCount = GetSurroundingCount(pattern & ~0x10);
 
                 auto centerResult { false };
                 if (surroundingCount < 2 || surroundingCount > 3) centerResult = false;
@@ -254,12 +254,36 @@ namespace embeddedpenguins::life::infrastructure
             {
                 for (auto step = rowStep - 1; step < rowStep + 2; step++)
                 {
-                    if (step < maxIndex_ && model_[step].Alive) surround |= bitmask;
+                    if (step < maxIndex_ && carrier_.Model[step].Alive) surround |= bitmask;
                     bitmask <<= 1;
                 }
             }
 
             return rules_[surround];
+        }
+
+        void SignalAllSurroundingCellsToEvaluate(unsigned long long int cellIndex, ProcessCallback<LifeOperation, LifeRecord>& callback)
+        {
+            for (auto rowStep = cellIndex - width_; rowStep < cellIndex + width_ + 1; rowStep += width_)
+            {
+                for (auto step = rowStep - 1; step < rowStep + 2; step++)
+                {
+                    callback(LifeOperation(step, Operation::Evaluate));
+                }
+            }
+        }
+
+        unsigned short int GetSurroundingCount(unsigned short int surround)
+        {
+            // Brian Kernigan says this will count the surrounding bits, so I trust him :)
+            unsigned short int count = 0; 
+            while (surround != 0)
+            { 
+                surround &= (surround - 1); 
+                count++; 
+            } 
+
+            return count;
         }
     };
 }

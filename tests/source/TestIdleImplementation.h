@@ -13,6 +13,7 @@
 #include "Recorder.h"
 #include "TestOperation.h"
 #include "TestNode.h"
+#include "TestModelCarrier.h"
 #include "TestRecord.h"
 
 namespace test::embeddedpenguins::modelengine::infrastructure
@@ -42,7 +43,7 @@ namespace test::embeddedpenguins::modelengine::infrastructure
     class TestIdleImplementation : public WorkerThread<TestOperation, TestIdleImplementation, TestRecord>
     {
         int workerId_;
-        vector<TestNode>& model_;
+        TestModelCarrier carrier_;
         const json& configuration_;
 
     public:
@@ -51,9 +52,9 @@ namespace test::embeddedpenguins::modelengine::infrastructure
         // Required constructor.
         // Allow the template library to pass in the model
         // for each worker thread that is created.
-        TestIdleImplementation(int workerId, vector<TestNode>& model, const json& configuration) :
+        TestIdleImplementation(int workerId, TestModelCarrier carrier, const json& configuration) :
             workerId_(workerId),
-            model_(model),
+            carrier_(carrier),
             configuration_(configuration)
         {
             
@@ -76,7 +77,7 @@ namespace test::embeddedpenguins::modelengine::infrastructure
             // Do work here.
             for (auto& work = begin; work != end; work++)
             {
-                model_[work->Operator.Index].Data += workerId_;
+                carrier_.Model[work->Operator.Index].Data += workerId_;
             }
         }
 

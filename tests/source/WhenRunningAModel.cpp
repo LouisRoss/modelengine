@@ -11,6 +11,7 @@
 #include "TestOperation.h"
 #include "TestImplementation.h"
 #include "TestIdleImplementation.h"
+#include "TestModelCarrier.h"
 
 namespace test::embeddedpenguins::modelengine::infrastructure
 {
@@ -28,20 +29,24 @@ namespace test::embeddedpenguins::modelengine::infrastructure
 
   using ::embeddedpenguins::modelengine::ModelEngine;
 
+  constexpr unsigned long long int modelSize_ = 5'000;
+
   class WhenRunningAModel : public ::testing::Test
   {
   protected:
-    unsigned long long int modelSize_ = 5'000;
-    unique_ptr<vector<TestNode>> model_ = make_unique<vector<TestNode>>(modelSize_);
-    unique_ptr<ModelEngine<TestNode, TestOperation, TestImplementation, TestRecord>> modelEngine_ { };
+    //unique_ptr<vector<TestNode>> model_ = make_unique<vector<TestNode>>(modelSize_);
+    vector<TestNode> model_;
+    TestModelCarrier carrier_ { .Model = model_ };
+    unique_ptr<ModelEngine<TestNode, TestOperation, TestImplementation, TestModelCarrier, TestRecord>> modelEngine_ { };
     nanoseconds duration_ { std::chrono::nanoseconds::min() };
     json configuration_ {};
 
-    vector<TestNode>& GetModel() { return *model_; }
-    ModelEngine<TestNode, TestOperation, TestImplementation, TestRecord>& GetModelEngine() { return *modelEngine_; }
+    vector<TestNode>& GetModel() { return model_; }
+    ModelEngine<TestNode, TestOperation, TestImplementation, TestModelCarrier, TestRecord>& GetModelEngine() { return *modelEngine_; }
 
     WhenRunningAModel()
     {
+      model_.resize(modelSize_);
     }
 
     ~WhenRunningAModel() override { }
@@ -50,13 +55,13 @@ namespace test::embeddedpenguins::modelengine::infrastructure
 
     void SetModelEngine(unsigned long long int size, int workerCount = 0)
     {
-      model_->resize(size);
+      model_.resize(size);
       modelEngine_.reset();
-      modelEngine_ = make_unique<ModelEngine<TestNode, TestOperation, TestImplementation, TestRecord>>(*model_, microseconds(1'000), workerCount);
+      modelEngine_ = make_unique<ModelEngine<TestNode, TestOperation, TestImplementation, TestModelCarrier, TestRecord>>(carrier_, microseconds(1'000), workerCount);
       duration_ = nanoseconds::min();
     }
 
-    void SetModelEngine(unique_ptr<ModelEngine<TestNode, TestOperation, TestImplementation, TestRecord>>& modelEngine, int workerCount = 0)
+    void SetModelEngine(unique_ptr<ModelEngine<TestNode, TestOperation, TestImplementation, TestModelCarrier, TestRecord>>& modelEngine, int workerCount = 0)
     {
       modelEngine_.reset();
       modelEngine_ = std::move(modelEngine);
@@ -137,7 +142,7 @@ namespace test::embeddedpenguins::modelengine::infrastructure
   TEST_F(WhenRunningAModel, ModelEngineRunsWithIdleCycles)
   {
     // Arrange
-    ModelEngine<TestNode, TestOperation, TestIdleImplementation, TestRecord> modelEngine(*model_, microseconds(1'000), configuration_);
+    ModelEngine<TestNode, TestOperation, TestIdleImplementation, TestModelCarrier, TestRecord> modelEngine(carrier_, microseconds(1'000), configuration_);
 
     // Act
     modelEngine.Run();
@@ -217,13 +222,13 @@ namespace test::embeddedpenguins::modelengine::infrastructure
     // So, the expected number in each index is Id * (workerCount * (iterations - 3) + 1)
     auto baseIncrement = workerCount * (iterations - 3) + 1;
     auto index = 0;
-    auto span = model_->size() / workerCount;
+    auto span = carrier_.ModelSize() / workerCount;
 
     for (auto id = 1; id < workerCount; id++)
     {
-      EXPECT_EQ(GetModel()[index].Data, baseIncrement * id);
+      EXPECT_EQ(carrier_.Model[index].Data, baseIncrement * id);
       index += span;
     }
-    EXPECT_EQ(GetModel()[model_->size() - 1].Data, baseIncrement * workerCount);
+    EXPECT_EQ(carrier_.Model[carrier_.ModelSize() - 1].Data, baseIncrement * workerCount);
   }
 }

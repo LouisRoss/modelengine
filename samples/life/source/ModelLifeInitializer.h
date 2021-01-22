@@ -10,8 +10,9 @@
 
 #include "LifeNode.h"
 #include "LifeOperation.h"
-#include "LifeImplementation.h"
+#include "LifeSupport.h"
 #include "LifeRecord.h"
+#include "LifeModelCarrier.h"
 
 namespace embeddedpenguins::life::infrastructure
 {
@@ -26,16 +27,12 @@ namespace embeddedpenguins::life::infrastructure
     using embeddedpenguins::modelengine::ModelEngine;
     using embeddedpenguins::modelengine::sdk::ModelInitializer;
 
-    class ModelLifeInitializer : public ModelInitializer<LifeNode, LifeOperation, LifeRecord>
+    class ModelLifeInitializer : public ModelInitializer<LifeNode, LifeOperation, LifeSupport, LifeRecord>
     {
-        unsigned long int width_ { 100 };
-        unsigned long int height_ { 100 };
-        unsigned long long int maxIndex_ { };
-
         vector<unsigned long long int> initializedCells_ { };
 
     public:
-        ModelLifeInitializer(vector<LifeNode>& model, json& configuration);
+        ModelLifeInitializer(LifeModelCarrier carrier, json& configuration);
         virtual void Initialize() override;
         virtual void InjectSignal(ProcessCallback<LifeOperation, LifeRecord>& callback) override;
     };
