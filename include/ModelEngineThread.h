@@ -41,26 +41,26 @@ namespace embeddedpenguins::modelengine
     // The two phases do not run simultaneously, but use synchronization barriers
     // to ensure the phases run serially.
     //
-    template<class NODETYPE, class OPERATORTYPE, class IMPLEMENTATIONTYPE, class RECORDTYPE>
+    template<class NODETYPE, class OPERATORTYPE, class IMPLEMENTATIONTYPE, class MODELCARRIERTYPE, class RECORDTYPE>
     class ModelEngineThread
     {
         unique_ptr<IModelEngineWaiter> waiter_ { };
         unique_ptr<IModelEnginePartitioner> partitioner_ { };
 
-        ModelEngineContext<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, RECORDTYPE>& context_;
-        ModelEngineContextOp<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, RECORDTYPE> contextOp_;
-        vector<NODETYPE>& model_;
+        ModelEngineContext<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>& context_;
+        ModelEngineContextOp<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE> contextOp_;
+        MODELCARRIERTYPE carrier_;
 
     public:
         ModelEngineThread() = delete;
         ModelEngineThread(
-                        ModelEngineContext<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, RECORDTYPE>& context, 
-                        vector<NODETYPE>& model, 
+                        ModelEngineContext<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>& context, 
+                        MODELCARRIERTYPE carrier, 
                         unique_ptr<IModelEnginePartitioner>& partitioner, 
                         unique_ptr<IModelEngineWaiter>& waiter) :
             context_(context),
             contextOp_(context),
-            model_(model),
+            carrier_(carrier),
             waiter_(std::move(waiter)),
             partitioner_(std::move(partitioner))
         {
@@ -108,7 +108,7 @@ namespace embeddedpenguins::modelengine
     private:
         void Initialize()
         {
-            contextOp_.CreateWorkers(model_);
+            contextOp_.CreateWorkers(carrier_);
 
             context_.Workers[0]->Scan(WorkCode::InitialScan);
             context_.Workers[0]->WaitForPreviousScan();

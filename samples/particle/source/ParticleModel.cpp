@@ -14,6 +14,7 @@
 #include "ParticleImplementation.h"
 #include "ParticleNode.h"
 #include "ParticleRecord.h"
+#include "ParticleModelCarrier.h"
 
 #include "KeyListener.h"
 
@@ -41,6 +42,7 @@ using embeddedpenguins::particle::infrastructure::ParticleNode;
 using embeddedpenguins::particle::infrastructure::ParticleType;
 using embeddedpenguins::particle::infrastructure::ParticleRecord;
 using embeddedpenguins::particle::infrastructure::KeyListener;
+using embeddedpenguins::particle::infrastructure::ParticleModelCarrier;
 
 //////////////////////////////////////////////////////////// CPU Code ////////////////////////////////////////////////////////////
 //
@@ -51,8 +53,8 @@ unsigned long int height { 100 };
 unsigned long int centerWidth {};
 unsigned long int centerHeight {};
 
-char PrintAndListenForQuit(ModelRunner<ParticleNode, ParticleOperation, ParticleImplementation, ParticleRecord>& modelRunner);
-void PrintLifeScan(ModelRunner<ParticleNode, ParticleOperation, ParticleImplementation, ParticleRecord>& modelRunner);
+char PrintAndListenForQuit(ModelRunner<ParticleNode, ParticleOperation, ParticleImplementation, ParticleModelCarrier, ParticleRecord>& modelRunner);
+void PrintLifeScan(ModelRunner<ParticleNode, ParticleOperation, ParticleImplementation, ParticleModelCarrier, ParticleRecord>& modelRunner);
 void ParseArguments(int argc, char* argv[]);
 
 ///////////////////////////////////////////////////////////////////////////
@@ -62,7 +64,9 @@ void ParseArguments(int argc, char* argv[]);
 int main(int argc, char* argv[])
 {
     ParseArguments(argc, argv);
-    ModelRunner<ParticleNode, ParticleOperation, ParticleImplementation, ParticleRecord> modelRunner(argc, argv);
+    vector<ParticleNode> model;
+    ParticleModelCarrier carrier { .Model = model };
+    ModelRunner<ParticleNode, ParticleOperation, ParticleImplementation, ParticleModelCarrier, ParticleRecord> modelRunner(argc, argv, carrier);
 
     auto& configuration = modelRunner.Configuration();
     auto dimensionElement = configuration["Model"]["Dimensions"];
@@ -87,7 +91,7 @@ int main(int argc, char* argv[])
     return 0;
 }
 
-char PrintAndListenForQuit(ModelRunner<ParticleNode, ParticleOperation, ParticleImplementation, ParticleRecord>& modelRunner)
+char PrintAndListenForQuit(ModelRunner<ParticleNode, ParticleOperation, ParticleImplementation, ParticleModelCarrier, ParticleRecord>& modelRunner)
 {
     constexpr char KEY_UP = 'A';
     constexpr char KEY_DOWN = 'B';
@@ -156,17 +160,17 @@ char PrintAndListenForQuit(ModelRunner<ParticleNode, ParticleOperation, Particle
     return c;
 }
 
-void PrintLifeScan(ModelRunner<ParticleNode, ParticleOperation, ParticleImplementation, ParticleRecord>& modelRunner)
+void PrintLifeScan(ModelRunner<ParticleNode, ParticleOperation, ParticleImplementation, ParticleModelCarrier, ParticleRecord>& modelRunner)
 {
     constexpr int windowWidth = 100;
     constexpr int windowHeight = 30;
 
-    auto occupancy = std::count_if(modelRunner.GetModel().begin(), modelRunner.GetModel().end(), 
+    auto occupancy = std::count_if(modelRunner.GetModel().Model.begin(), modelRunner.GetModel().Model.end(), 
         [](const ParticleNode& node){ return node.Occupied; });
 
     cout << cls;
 
-    auto node = begin(modelRunner.GetModel());
+    auto node = begin(modelRunner.GetModel().Model);
     if (centerHeight < windowHeight / 2) centerHeight = windowHeight / 2;
     if (centerHeight >= height - (windowHeight / 2)) centerHeight = height - (windowHeight / 2) - 1;
     if (centerWidth < windowWidth / 2) centerWidth = windowWidth / 2;
@@ -195,7 +199,7 @@ void PrintLifeScan(ModelRunner<ParticleNode, ParticleOperation, ParticleImplemen
         cout << '\n';
 
         std::advance(node, width - windowWidth);
-        if (node >= end(modelRunner.GetModel())) node = begin(modelRunner.GetModel());
+        if (node >= end(modelRunner.GetModel().Model)) node = begin(modelRunner.GetModel().Model);
     }
 
     cout

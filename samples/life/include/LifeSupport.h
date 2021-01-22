@@ -1,31 +1,60 @@
 #pragma once
 
+#include <iostream>
 #include <vector>
+#include <tuple>
+
+#include "nlohmann/json.hpp"
 
 #include "ProcessCallback.h"
 
-#include "LifeCommon.h"
-#include "LifeNode.h"
 #include "LifeOperation.h"
+#include "LifeModelCarrier.h"
 #include "LifeRecord.h"
 
 namespace embeddedpenguins::life::infrastructure
 {
+    using std::cout;
     using std::vector;
+    using std::tuple;
+    using std::make_tuple;
 
-    using ::embeddedpenguins::modelengine::threads::ProcessCallback;
+    using nlohmann::json;
+
+    using embeddedpenguins::modelengine::threads::ProcessCallback;
 
     class LifeSupport
     {
+        LifeModelCarrier modelCarrier_;
+        json& configuration_;
+
         unsigned long int width_ { 100 };
         unsigned long int height_ { 100 };
 
     public:
-        LifeSupport(unsigned long width, unsigned long height) :
-            width_(width),
-            height_(height)
+        LifeSupport(LifeModelCarrier modelCarrier, json& configuration) :
+            modelCarrier_(modelCarrier),
+            configuration_(configuration)
         {
+            
+        }
 
+        const unsigned long int Width() const { return width_; }
+        const unsigned long int Height() const { return height_; }
+
+        void InitializeModel()
+        {
+            auto dimensionElement = configuration_["Model"]["Dimensions"];
+            if (dimensionElement.is_array())
+            {
+                auto dimensionArray = dimensionElement.get<vector<int>>();
+                width_ = dimensionArray[0];
+                height_ = dimensionArray[1];
+            }
+
+            auto modelSize = width_ * height_;
+            cout << "Using width = " << width_ << ", height = " << height_ << ", modelsize = " << modelSize << "\n";
+            modelCarrier_.Model.resize(modelSize);
         }
 
         void MakeStopSignal(unsigned long long int centerCell, vector<unsigned long long int>& initializedCells)
@@ -44,11 +73,11 @@ namespace embeddedpenguins::life::infrastructure
             initializedCells.push_back(centerCell + (width_ * 2));
         }
 
-        void InitializeCells(vector<LifeNode>& model, vector<unsigned long long int>& initializedCells)
+        void InitializeCells(vector<unsigned long long int>& initializedCells)
         {
             for (auto cellIndex : initializedCells)
             {
-                model[cellIndex].Alive = true;
+                modelCarrier_.Model[cellIndex].Alive = true;
             }
         }
 

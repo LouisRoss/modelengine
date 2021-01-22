@@ -1,61 +1,72 @@
 #pragma once
 
+#include <iostream>
 #include <vector>
 #include <string>
 #include <cstring>
+
+#include "nlohmann/json.hpp"
 
 #include "ProcessCallback.h"
 
 #include "ParticleCommon.h"
 #include "ParticleNode.h"
 #include "ParticleOperation.h"
+#include "ParticleModelCarrier.h"
 #include "ParticleRecord.h"
 
 namespace embeddedpenguins::particle::infrastructure
 {
+    using std::cout;
     using std::vector;
     using std::string;
     using std::memset;
     using std::memcpy;
 
+    using nlohmann::json;
+
     using ::embeddedpenguins::modelengine::threads::ProcessCallback;
 
     class ParticleSupport
     {
+        ParticleModelCarrier modelCarrier_;
+        json& configuration_;
+
         unsigned long int width_ { 100 };
         unsigned long int height_ { 100 };
         vector<unsigned long long int> initializedCells_ {};
 
     public:
-        ParticleSupport() :
-            width_(100),
-            height_(100)
+        const unsigned long int Width() const { return width_; }
+        const unsigned long int Height() const { return height_; }
+
+    public:
+        ParticleSupport(ParticleModelCarrier modelCarrier, json& configuration) :
+            modelCarrier_(modelCarrier),
+            configuration_(configuration)
         {
 
         }
 
-        ParticleSupport(unsigned long width, unsigned long height) :
-            width_(width),
-            height_(height)
+        void InitializeModel()
         {
+            auto dimensionElement = configuration_["Model"]["Dimensions"];
+            if (dimensionElement.is_array())
+            {
+                auto dimensionArray = dimensionElement.get<vector<int>>();
+                width_ = dimensionArray[0];
+                height_ = dimensionArray[1];
+            }
 
+            auto modelSize = width_ * height_;
+            cout << "Using width = " << width_ << ", height = " << height_ << ", modelsize = " << modelSize << "\n";
+            modelCarrier_.Model.resize(modelSize);
         }
 
-        ParticleSupport(const ParticleSupport& other) :
-            width_(other.width_),
-            height_(other.height_)
-        {
-
-        }
-
-        void MakeStopSignal(unsigned long long int index)
-        {
-        }
-
-        void InitializeCell(vector<ParticleNode>& model, const string& name, unsigned long int row, unsigned long int column, int horizontalVector, int verticalVector, int mass, int speed, ParticleType type)
+        void InitializeCell(const string& name, unsigned long int row, unsigned long int column, int horizontalVector, int verticalVector, int mass, int speed, ParticleType type)
         {
             auto index = row * width_ + column;
-            auto& particleNode = model[index];
+            auto& particleNode = modelCarrier_.Model[index];
 
             memset(particleNode.Name, '\0', sizeof(particleNode.Name));
             memcpy(particleNode.Name, name.c_str(), (name.length() < sizeof(particleNode.Name) - 1 ? name.length() : sizeof(particleNode.Name) - 1));
@@ -69,11 +80,11 @@ namespace embeddedpenguins::particle::infrastructure
             initializedCells_.push_back(index);
         }
 
-        void SignalInitialCells(vector<ParticleNode>& model, ProcessCallback<ParticleOperation, ParticleRecord>& callback)
+        void SignalInitialCells(ProcessCallback<ParticleOperation, ParticleRecord>& callback)
         {
             for (auto index : initializedCells_)
             {
-                auto& particleNode = model[index];
+                auto& particleNode = modelCarrier_.Model[index];
                 string particleName(particleNode.Name);
                 callback(ParticleOperation(index, particleName));
             }

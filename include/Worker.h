@@ -23,7 +23,7 @@ namespace embeddedpenguins::modelengine::threads
     // The worker object uses synchronization objects in its context
     // to control its worker thread.
     //
-    template<class NODETYPE, class OPERATORTYPE, class IMPLEMENTATIONTYPE, class RECORDTYPE>
+    template<class NODETYPE, class OPERATORTYPE, class IMPLEMENTATIONTYPE, class MODELCARRIERTYPE, class RECORDTYPE>
     class Worker
     {
         thread workerThread_;
@@ -37,7 +37,7 @@ namespace embeddedpenguins::modelengine::threads
     public:
         Worker() = delete;
 
-        Worker(vector<NODETYPE>& model, int workerId, microseconds& enginePeriod, 
+        Worker(MODELCARRIERTYPE carrier, int workerId, microseconds& enginePeriod, 
                     const json& configuration, 
                     unsigned long long int segmentStart, unsigned long long int segmentEnd, 
                     unsigned long long int& iterations, 
@@ -49,7 +49,7 @@ namespace embeddedpenguins::modelengine::threads
             context_.RangeBegin = segmentStart;
             context_.RangeEnd = segmentEnd;
 
-            workerThread_ = thread(IMPLEMENTATIONTYPE(workerId, model, configuration), std::ref(context_));
+            workerThread_ = thread(IMPLEMENTATIONTYPE(workerId, carrier, configuration), std::ref(context_));
         }
 
         void Scan(WorkCode code)

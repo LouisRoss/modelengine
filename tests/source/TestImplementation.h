@@ -13,6 +13,7 @@
 #include "Recorder.h"
 #include "TestOperation.h"
 #include "TestNode.h"
+#include "TestModelCarrier.h"
 #include "TestRecord.h"
 
 namespace test::embeddedpenguins::modelengine::infrastructure
@@ -42,7 +43,7 @@ namespace test::embeddedpenguins::modelengine::infrastructure
     class TestImplementation : public WorkerThread<TestOperation, TestImplementation, TestRecord>
     {
         int workerId_;
-        vector<TestNode>& model_;
+        TestModelCarrier carrier_;
         const json& configuration_;
 
     public:
@@ -51,9 +52,9 @@ namespace test::embeddedpenguins::modelengine::infrastructure
         // Required constructor.
         // Allow the template library to pass in the model
         // for each worker thread that is created.
-        TestImplementation(int workerId, vector<TestNode>& model, const json& configuration) :
+        TestImplementation(int workerId, TestModelCarrier carrier, const json& configuration) :
             workerId_(workerId),
-            model_(model),
+            carrier_(carrier),
             configuration_(configuration)
         {
             
@@ -79,12 +80,12 @@ namespace test::embeddedpenguins::modelengine::infrastructure
 
             for (auto& work = begin; work != end; work++)
             {
-                model_[work->Operator.Index].Data += workerId_;
-                log.Logger() << "(" << work->Tick << ") Index " << work->Operator.Index << " set to " << model_[work->Operator.Index].Data << " in tick " << tickNow << '\n';
+                carrier_.Model[work->Operator.Index].Data += workerId_;
+                log.Logger() << "(" << work->Tick << ") Index " << work->Operator.Index << " set to " << carrier_.Model[work->Operator.Index].Data << " in tick " << tickNow << '\n';
                 log.Logit();
             }
 
-            auto span = model_.size() / 7;
+            auto span = carrier_.ModelSize() / 7;
             auto index = 0LL;
             for (auto _ = 6; _--; index += span)
             {

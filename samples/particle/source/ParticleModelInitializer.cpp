@@ -11,28 +11,16 @@ namespace embeddedpenguins::particle::infrastructure
 
     using embeddedpenguins::modelengine::sdk::IModelInitializer;
     
-    ParticleModelInitializer::ParticleModelInitializer(vector<ParticleNode>& model, json& configuration) :
-        ModelInitializer(model, configuration)
+    ParticleModelInitializer::ParticleModelInitializer(ParticleModelCarrier carrier, json& configuration) :
+        ModelInitializer(configuration, ParticleSupport(carrier, configuration))
     {
     }
 
     void ParticleModelInitializer::Initialize()
     {
-        auto dimensionElement = configuration_["Model"]["Dimensions"];
-        if (dimensionElement.is_array())
-        {
-            auto dimensionArray = dimensionElement.get<vector<int>>();
-            width_ = dimensionArray[0];
-            height_ = dimensionArray[1];
-        }
+        helper_.InitializeModel();
 
-        support_ = ParticleSupport(width_, height_);
-
-        auto modelSize = width_ * height_;
-        cout << "Using width = " << width_ << ", height = " << height_ << ", modelsize = " << modelSize << "\n";
-        model_.resize(modelSize);
-
-        auto centerCell = (width_ * height_ / 2) + (width_ / 2);
+        auto centerCell = (helper_.Width() * helper_.Height() / 2) + (helper_.Width() / 2);
 
         int verticalVector = -3;
         int horizontalVector = -3;
@@ -40,13 +28,13 @@ namespace embeddedpenguins::particle::infrastructure
         int speed = 0;
         ParticleType type = ParticleType::Neutron;
 
-        for (auto row = 0; row < height_; row += 8)
+        for (auto row = 0; row < helper_.Height(); row += 8)
         {
-            for (auto column = 0; column < width_; column += 8)
+            for (auto column = 0; column < helper_.Width(); column += 8)
             {
                 ostringstream nameStream;
                 nameStream << "P(" << std::setw(3) << std::setfill('0') << row << ',' << std::setw(3) << std::setfill('0') << column << ')';
-                support_.InitializeCell(model_, nameStream.str(), row, column, verticalVector, horizontalVector, mass, speed, type);
+                helper_.InitializeCell(nameStream.str(), row, column, verticalVector, horizontalVector, mass, speed, type);
 
                 verticalVector++;
                 if (verticalVector > 3)
@@ -68,13 +56,13 @@ namespace embeddedpenguins::particle::infrastructure
 
     void ParticleModelInitializer::InjectSignal(ProcessCallback<ParticleOperation, ParticleRecord>& callback)
     {
-        support_.SignalInitialCells(model_, callback);
+        helper_.SignalInitialCells(callback);
     }
 
     // the class factories
 
-    extern "C" IModelInitializer<ParticleOperation, ParticleRecord>* create(vector<ParticleNode>& model, json& configuration) {
-        return new ParticleModelInitializer(model, configuration);
+    extern "C" IModelInitializer<ParticleOperation, ParticleRecord>* create(ParticleModelCarrier carrier, json& configuration) {
+        return new ParticleModelInitializer(carrier, configuration);
     }
 
     extern "C" void destroy(IModelInitializer<ParticleOperation, ParticleRecord>* p) {

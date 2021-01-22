@@ -31,11 +31,11 @@ namespace embeddedpenguins::modelengine
     // so that between the model engine thread and the worker thread, all cores
     // will be kept busy.
     //
-    template<class NODETYPE, class OPERATORTYPE, class IMPLEMENTATIONTYPE, class RECORDTYPE>
+    template<class NODETYPE, class OPERATORTYPE, class IMPLEMENTATIONTYPE, class MODELCARRIERTYPE, class RECORDTYPE>
     class ModelEngine
     {
-        ModelEngineContext<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, RECORDTYPE> context_;
-        ModelEngineContextOp<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, RECORDTYPE> contextOp_;
+        ModelEngineContext<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE> context_;
+        ModelEngineContextOp<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE> contextOp_;
         thread workerThread_;
         PartitionPolicy partitionPolicy_ { PartitionPolicy::AdaptiveWidth };
         nanoseconds duration_ {};
@@ -56,14 +56,14 @@ namespace embeddedpenguins::modelengine
     public:
         ModelEngine() = delete;
 
-        ModelEngine(vector<NODETYPE>& model, microseconds enginePeriod, const json& configuration, int segmentCount = 0) :
+        ModelEngine(MODELCARRIERTYPE carrier, microseconds enginePeriod, const json& configuration, int segmentCount = 0) :
             contextOp_(context_)
         {
             context_.WorkerCount = segmentCount;
             context_.EnginePeriod = enginePeriod;
             context_.Configuration = configuration;
 
-            CreateWorkerThread(model);
+            CreateWorkerThread(carrier);
         }
 
         ~ModelEngine()
@@ -83,7 +83,7 @@ namespace embeddedpenguins::modelengine
                 std::this_thread::yield();
         }
 
-        void InitializeModel(ModelInitializerProxy<NODETYPE, OPERATORTYPE, RECORDTYPE>& initializer)
+        void InitializeModel(ModelInitializerProxy<NODETYPE, OPERATORTYPE, MODELCARRIERTYPE, RECORDTYPE>& initializer)
         {
             lock_guard<mutex> lock(context_.PartitioningMutex);
             ProcessCallback callback(context_.ExternalWorkSource);
@@ -108,25 +108,25 @@ namespace embeddedpenguins::modelengine
         }
 
     private:
-        void CreateWorkerThread(vector<NODETYPE>& model)
+        void CreateWorkerThread(MODELCARRIERTYPE carrier)
         {
             unique_ptr<IModelEnginePartitioner> partitioner { };
             switch (partitionPolicy_)
             {
             case PartitionPolicy::ConstantWidth:
-                partitioner = make_unique<ConstantWidthPartitioner<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, RECORDTYPE>>(context_);
+                partitioner = make_unique<ConstantWidthPartitioner<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>>(context_);
                 break;
             
             case PartitionPolicy::AdaptiveWidth:
-                partitioner = make_unique<AdaptiveWidthPartitioner<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, RECORDTYPE>>(context_);
+                partitioner = make_unique<AdaptiveWidthPartitioner<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>>(context_);
                 break;
             
             default:
                 break;
             }
 
-            unique_ptr<IModelEngineWaiter> waiter = make_unique<ConstantTickWaiter<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, RECORDTYPE>>(context_);
-            workerThread_ = thread(ModelEngineThread<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, RECORDTYPE>(context_, model, partitioner, waiter));
+            unique_ptr<IModelEngineWaiter> waiter = make_unique<ConstantTickWaiter<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>>(context_);
+            workerThread_ = thread(ModelEngineThread<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>(context_, carrier, partitioner, waiter));
         }
     };
 }

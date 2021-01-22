@@ -23,10 +23,10 @@ namespace embeddedpenguins::modelengine::sdk
     // the IModelInitializer<> interface, plus two C-style methods to create and destroy
     // instances of its class on the heap.
     //
-    template<class NODETYPE, class OPERATORTYPE, class RECORDTYPE>
+    template<class NODETYPE, class OPERATORTYPE, class MODELCARRIERTYPE, class RECORDTYPE>
     class ModelInitializerProxy : IModelInitializer<OPERATORTYPE, RECORDTYPE>
     {
-        using InitializerCreator = IModelInitializer<OPERATORTYPE, RECORDTYPE>* (*)(vector<NODETYPE>&, json&);
+        using InitializerCreator = IModelInitializer<OPERATORTYPE, RECORDTYPE>* (*)(MODELCARRIERTYPE, json&);
         using InitializerDeleter = void (*)(IModelInitializer<OPERATORTYPE, RECORDTYPE>*);
 
         const string initializerSharedLibraryPath_ {};
@@ -57,11 +57,11 @@ namespace embeddedpenguins::modelengine::sdk
                 dlclose(initializerLibrary_);
         }
 
-        void CreateProxy(vector<NODETYPE>& model, json& configuration)
+        void CreateProxy(MODELCARRIERTYPE carrier, json& configuration)
         {
             LoadInitializer();
             if (createInitializer_ != nullptr)
-                initializer_ = createInitializer_(model, configuration);
+                initializer_ = createInitializer_(carrier, configuration);
         }
 
     public:
