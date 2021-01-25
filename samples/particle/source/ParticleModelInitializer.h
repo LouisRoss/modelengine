@@ -28,7 +28,7 @@ namespace embeddedpenguins::particle::infrastructure
     using embeddedpenguins::modelengine::ModelEngine;
     using embeddedpenguins::modelengine::sdk::ModelInitializer;
 
-    class ParticleModelInitializer : public ModelInitializer<ParticleNode, ParticleOperation, ParticleSupport, ParticleRecord>
+    class ParticleModelInitializer : public ModelInitializer<ParticleOperation, ParticleSupport, ParticleRecord>
     {
     public:
         ParticleModelInitializer(ParticleModelCarrier carrier, json& configuration);
