@@ -44,20 +44,10 @@ namespace embeddedpenguins::modelengine::threads
             {
                 WaitForSignal(context);
 
-                if (context.Code == WorkCode::InitialScan)
-                {
-                    auto derived = static_cast<IMPLEMENTATIONTYPE&>(*this);
-                    derived.Initialize(context.Logger, context.Record, context.Iterations, callback);
-                }
-                else if (context.Code == WorkCode::Scan)
+                if (context.Code == WorkCode::Scan)
                 {
                     auto derived = static_cast<IMPLEMENTATIONTYPE&>(*this);
                     derived.Process(context.Logger, context.Record, context.Iterations, context.WorkForThread.begin(), context.WorkForThread.end(), callback);
-                }
-                else if (context.Code == WorkCode::FinalScan)
-                {
-                    auto derived = static_cast<IMPLEMENTATIONTYPE&>(*this);
-                    derived.Finalize(context.Logger, context.Record, context.Iterations);
                 }
 
                 SignalDone(context);

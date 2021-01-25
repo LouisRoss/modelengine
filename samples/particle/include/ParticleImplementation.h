@@ -83,12 +83,12 @@ namespace embeddedpenguins::particle::infrastructure
         }
 
         //
-        // Required Initialize method.  
+        // Required StreamNewInputWork method.  
         // One instance of this class on one thread will be called
-        // here to initialize the model.
-        // Do not use this method to initialize instances of this class.
+        // here each tick to provide new input from external to the model.
+        // It is up to the implementation to connect to the external source.
         //
-        void Initialize(Log& log, Recorder<ParticleRecord>& record, 
+        void StreamNewInputWork(Log& log, Recorder<ParticleRecord>& record, 
             unsigned long long int tickNow, 
             ProcessCallback<ParticleOperation, ParticleRecord>& callback)
         {
@@ -112,17 +112,6 @@ namespace embeddedpenguins::particle::infrastructure
             {
                 ProcessWorkItem(log, record, tickNow, work->Operator, callback);
             }
-        }
-
-        //
-        // Required Finalize method.
-        // One instance of this class on one thread will be called
-        // here to clean up the model.
-        // Do not use this method as a destructor for instances of this class.
-        // Destructors are allowed -- use one instead.
-        //
-        void Finalize(Log& log, Recorder<ParticleRecord>& record, unsigned long long int tickNow)
-        {
         }
 
     private:

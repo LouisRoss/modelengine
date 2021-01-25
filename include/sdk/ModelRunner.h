@@ -109,7 +109,7 @@ namespace embeddedpenguins::modelengine::sdk
         }
 
         //
-        // Cal Quit() and wait until the model engine stops.
+        // Call Quit() and wait until the model engine stops.
         // It is legal to call this after Quit().
         //
         void WaitForQuit()

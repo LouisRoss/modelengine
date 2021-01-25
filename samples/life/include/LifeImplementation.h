@@ -38,9 +38,8 @@ namespace embeddedpenguins::life::infrastructure
     // The implementation of the algorithm for Conway's game of life.
     // Note the required methods and their signatures:
     // * Constructor
-    // * Initialize
+    // * StreamNewInputWork
     // * Process
-    // * Finalize
     //
     // There is no interface to enforce implementation of these required methods.
     // Instead, the compiler will tell you if the implementation is wrong.
@@ -95,12 +94,12 @@ namespace embeddedpenguins::life::infrastructure
         }
 
         //
-        // Required Initialize method.  
+        // Required StreamNewInputWork method.  
         // One instance of this class on one thread will be called
-        // here to initialize the model.
-        // Do not use this method to initialize instances of this class.
+        // here each tick to provide new input from external to the model.
+        // It is up to the implementation to connect to the external source.
         //
-        void Initialize(Log& log, Recorder<LifeRecord>& record, 
+        void StreamNewInputWork(Log& log, Recorder<LifeRecord>& record, 
             unsigned long long int tickNow, 
             ProcessCallback<LifeOperation, LifeRecord>& callback)
         {
@@ -135,17 +134,6 @@ namespace embeddedpenguins::life::infrastructure
             {
                 ProcessWorkItem(log, record, tickNow, work->Operator, callback);
             }
-        }
-
-        //
-        // Required Finalize method.
-        // One instance of this class on one thread will be called
-        // here to clean up the model.
-        // Do not use this method as a destructor for instances of this class.
-        // Destructors are allowed -- use one instead.
-        //
-        void Finalize(Log& log, Recorder<LifeRecord>& record, unsigned long long int tickNow)
-        {
         }
 
     private:

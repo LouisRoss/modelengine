@@ -295,9 +295,9 @@ This class implements the operations on nodes as described by the two classes ab
 There are several aspects of this class that are required, and are listed here:
 - This class must be derived from the Model Engine class `WorkerThread`.  In addition, the base class `WorkerThread` must be specialized with template arguments specifying the model's *operation*, *implementation* (this class), and *record* classes.
 - You must supply a constructor that takes the worker id (what thread this instance runs on), the model (the vector of *node* classes), and a reference to the Json configuration being used.  More on this below.
-- You must supply a method called `Initialize()`.  If model-specific initialialization needs to be done, one instance of this class will be called on its `Initialize()` method.  Most of the heavy lifting for model initialization is now done through the *initializer*, which we will get to below.  This method is seldom used.
+- You must supply a method called `StreamNewInputWork()`.  This method is called every tick on only one thread, and allows the model to connect
+to outside data sources and return them as *operation* classes to be executed.
 - You must supply a method called `Process()`.  Once all work items have been partitioned among all the worker threads, each instance of this class will be called on its `Process()` method with the work it needs to do before it returns.
-- You must supply a method called `Finalize()`.  As with `Initialize()`, one instance of this class will be called to clean up as the Model Engine shuts down.
 
 The important contractual expectation for this class is that it will accept a collection of work items, each of which will be expressed as an *operation* class object.  Each work item has an `Index` field, and it is required that the `Process()` method should never make any changes to the model other than to the node at `model[work.Index]`.  Different instances of this class will run on different hardware threads, and it is important that each thread write only to nodes assigned to it.
 
@@ -316,8 +316,8 @@ namespace embeddedpenguins::life::infrastructure
             /* ... */
         }
 
-        // Required Initialize method.  
-        void Initialize(Log& log, Recorder<LifeRecord>& record, 
+        // Required StreamNewInputWork method.  
+        void StreamNewInputWork(Log& log, Recorder<LifeRecord>& record, 
             unsigned long long int tickNow, 
             ProcessCallback<LifeOperation, LifeRecord>& callback)
         {
@@ -332,22 +332,16 @@ namespace embeddedpenguins::life::infrastructure
         {
             /* ... */
         }
-
-        // Required Finalize method.
-        void Finalize(Log& log, Recorder<LifeRecord>& record, unsigned long long int tickNow)
-        {
-        }
     };
 }
 ```
 
 One important point to note about the *implementation* class is the last parameter of the
-`Process()` method, `callback`.  This parameter is a reference to type `ProcessCallback`.
+`StreamNewInputWork()` and `Process()` methods, `callback`.  This parameter is a reference to type `ProcessCallback`.
 The `callback` parameter allows you to send an instance of the model *operation* class into
 the Model Engine to be scheduled as an operation in a future tick.
 
-Except for the injection of initial work into the model when it is first started, use of
-this callback object is the only way that future operations on the model will be processed.
+Use of the callback object is the only way that future operations on the model will be processed.
 
 The callback is a functor object.  It is used by creating an instance of the model *operation* class and 
 passing it to the callback as a function call:

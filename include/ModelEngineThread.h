@@ -13,6 +13,7 @@
 #include "ConstantWidthPartitioner.h"
 #include "ConstantTickWaiter.h"
 #include "Worker.h"
+#include "ProcessCallback.h"
 #include "Log.h"
 #include "Recorder.h"
 
@@ -32,6 +33,7 @@ namespace embeddedpenguins::modelengine
 
     using embeddedpenguins::modelengine::threads::Worker;
     using embeddedpenguins::modelengine::threads::WorkCode;
+    using embeddedpenguins::modelengine::threads::ProcessCallback;
 
     //
     // The model engine does its work in this thread object.
@@ -50,6 +52,8 @@ namespace embeddedpenguins::modelengine
         ModelEngineContext<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>& context_;
         ModelEngineContextOp<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE> contextOp_;
         MODELCARRIERTYPE carrier_;
+        IMPLEMENTATIONTYPE WorkSource_;
+        ProcessCallback<OPERATORTYPE, RECORDTYPE> callback_;
 
     public:
         ModelEngineThread() = delete;
@@ -58,11 +62,13 @@ namespace embeddedpenguins::modelengine
                         MODELCARRIERTYPE carrier, 
                         unique_ptr<IModelEnginePartitioner>& partitioner, 
                         unique_ptr<IModelEngineWaiter>& waiter) :
+            waiter_(std::move(waiter)),
+            partitioner_(std::move(partitioner)),
             context_(context),
             contextOp_(context),
             carrier_(carrier),
-            waiter_(std::move(waiter)),
-            partitioner_(std::move(partitioner))
+            WorkSource_(context_.ExternalWorkSource.WorkerId, carrier_, context_.Configuration),
+            callback_(context_.ExternalWorkSource)
         {
             context_.Logger.SetId(0);
 
@@ -110,9 +116,6 @@ namespace embeddedpenguins::modelengine
         {
             contextOp_.CreateWorkers(carrier_);
 
-            context_.Workers[0]->Scan(WorkCode::InitialScan);
-            context_.Workers[0]->WaitForPreviousScan();
-
             context_.Iterations = 0ULL;
             context_.EngineInitialized = true;
         }
@@ -132,8 +135,10 @@ namespace embeddedpenguins::modelengine
                 if (!quit)
                 {
                     lock_guard<mutex> lock(context_.PartitioningMutex);
+        
                     StartWorkWithAllWorkers();
                     partitioner_->ConcurrentPartitionStep();
+                    WorkSource_.StreamNewInputWork(context_.ExternalWorkSource.Logger, context_.ExternalWorkSource.Record, context_.Iterations, callback_);
                     WaitForAllWorkersToCompleteWork();
                     PartitionWork();
 
@@ -250,9 +255,6 @@ namespace embeddedpenguins::modelengine
 
         void Cleanup()
         {
-            context_.Workers[0]->Scan(WorkCode::FinalScan);
-            context_.Workers[0]->WaitForPreviousScan();
-
 #ifndef NOLOG
             context_.Logger.Logger() << "ModelEngine waiting for worker threads to quit\n";
             context_.Logger.Logit();

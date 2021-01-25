@@ -10,9 +10,7 @@ namespace embeddedpenguins
         {
             Run,
             Quit,
-            InitialScan,
-            Scan,
-            FinalScan
+            Scan
         };
     }
 
