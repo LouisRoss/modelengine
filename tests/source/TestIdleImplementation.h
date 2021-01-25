@@ -45,6 +45,7 @@ namespace test::embeddedpenguins::modelengine::infrastructure
         int workerId_;
         TestModelCarrier carrier_;
         const json& configuration_;
+        bool firstRun_ { true };
 
     public:
         TestIdleImplementation() = delete;
@@ -60,11 +61,13 @@ namespace test::embeddedpenguins::modelengine::infrastructure
             
         }
 
-        void Initialize(Log& log, Recorder<TestRecord>& record, 
+        void StreamNewInputWork(Log& log, Recorder<TestRecord>& record, 
             unsigned long long int ticksSinceEpoch, 
             ProcessCallback<TestOperation, TestRecord>& callback)
         {
-            callback(TestOperation(1));
+            if (firstRun_) callback(TestOperation(1));
+
+            firstRun_ = false;
         }
 
         // Process but add no new work.  After the first single work item, the whole model will be idle.
@@ -79,10 +82,6 @@ namespace test::embeddedpenguins::modelengine::infrastructure
             {
                 carrier_.Model[work->Operator.Index].Data += workerId_;
             }
-        }
-
-        void Finalize(Log& log, Recorder<TestRecord>& record, int64_t milliseconds_since_epoch)
-        {
         }
     };
 }

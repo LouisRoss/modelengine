@@ -45,6 +45,7 @@ namespace test::embeddedpenguins::modelengine::infrastructure
         int workerId_;
         TestModelCarrier carrier_;
         const json& configuration_;
+        bool firstRun_ { true };
 
     public:
         TestImplementation() = delete;
@@ -60,13 +61,18 @@ namespace test::embeddedpenguins::modelengine::infrastructure
             
         }
 
-        void Initialize(Log& log, Recorder<TestRecord>& record, 
+        void StreamNewInputWork(Log& log, Recorder<TestRecord>& record, 
                         unsigned long long int tickNow, 
                         ProcessCallback<TestOperation, TestRecord>& callback)
         {
-            callback(TestOperation(1));
-            log.Logger() << "Creating initial work for index " << 1 << " with tick " << tickNow + 1 << '\n';
-            log.Logit();
+            if (firstRun_)
+            {
+                callback(TestOperation(1));
+                log.Logger() << "Creating initial work for index " << 1 << " with tick " << tickNow + 1 << '\n';
+                log.Logit();
+            }
+
+            firstRun_ = false;
         }
 
         void Process(Log& log, Recorder<TestRecord>& record, 
@@ -96,10 +102,6 @@ namespace test::embeddedpenguins::modelengine::infrastructure
             callback(TestOperation(4999));
             log.Logger() << "Creating work for index " << 4999 << " with tick " << tickNow + 1 << '\n';
             log.Logit();
-        }
-
-        void Finalize(Log& log, Recorder<TestRecord>& record, int64_t milliseconds_since_epoch)
-        {
         }
     };
 }
