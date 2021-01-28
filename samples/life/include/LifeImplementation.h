@@ -49,12 +49,15 @@ namespace embeddedpenguins::life::infrastructure
     class LifeImplementation : public WorkerThread<LifeOperation, LifeImplementation, LifeRecord>
     {
         int workerId_;
-        LifeModelCarrier carrier_;
+        LifeModelCarrier& carrier_;
         const json& configuration_;
 
         unsigned long int width_ { 100 };
         unsigned long int height_ { 100 };
         unsigned long long int maxIndex_ { };
+
+        bool firstTime_ { true };
+        vector<unsigned long long int> initializedCells_ { };
 
         // The rules of life are captured in this table.
         // The index to the table is an integer bit pattern
@@ -75,7 +78,7 @@ namespace embeddedpenguins::life::infrastructure
         // Allow the template library to pass in the model and configuration
         // to each worker thread that is created.
         //
-        LifeImplementation(int workerId, LifeModelCarrier carrier, const json& configuration) :
+        LifeImplementation(int workerId, LifeModelCarrier& carrier, const json& configuration) :
             workerId_(workerId),
             carrier_(carrier),
             configuration_(configuration)
@@ -103,6 +106,14 @@ namespace embeddedpenguins::life::infrastructure
             unsigned long long int tickNow, 
             ProcessCallback<LifeOperation, LifeRecord>& callback)
         {
+            if (firstTime_)
+            {
+                LifeSupport helper(carrier_, configuration_);
+                InitializeLife(helper);
+                helper.SignalInitialCells(initializedCells_, callback);
+            }
+
+            firstTime_ = false;
         }
 
         //
@@ -137,6 +148,18 @@ namespace embeddedpenguins::life::infrastructure
         }
 
     private:
+        void InitializeLife(LifeSupport& helper)
+        {
+            initializedCells_.clear();
+
+            auto centerCell = (helper.Width() * helper.Height() / 2) + (helper.Width() / 2);
+
+            helper.MakeGlider(centerCell, initializedCells_);
+            helper.MakeStopSignal(centerCell - (helper.Width() * 10), initializedCells_);
+            helper.MakeStopSignal(centerCell - (helper.Width() * 5) - 15, initializedCells_);
+            helper.InitializeCells(initializedCells_);
+        }
+
         void ProcessWorkItem(Log& log, Recorder<LifeRecord>& record, 
             unsigned long long int tickNow, 
             const LifeOperation& work, 

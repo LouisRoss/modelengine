@@ -1,6 +1,5 @@
 #pragma once
 
-#include <iostream>
 #include <vector>
 #include <tuple>
 
@@ -14,7 +13,6 @@
 
 namespace embeddedpenguins::life::infrastructure
 {
-    using std::cout;
     using std::vector;
     using std::tuple;
     using std::make_tuple;
@@ -25,24 +23,16 @@ namespace embeddedpenguins::life::infrastructure
 
     class LifeSupport
     {
-        LifeModelCarrier modelCarrier_;
-        json& configuration_;
+        LifeModelCarrier& modelCarrier_;
+        const json& configuration_;
 
         unsigned long int width_ { 100 };
         unsigned long int height_ { 100 };
 
     public:
-        LifeSupport(LifeModelCarrier modelCarrier, json& configuration) :
+        LifeSupport(LifeModelCarrier& modelCarrier, const json& configuration) :
             modelCarrier_(modelCarrier),
             configuration_(configuration)
-        {
-            
-        }
-
-        const unsigned long int Width() const { return width_; }
-        const unsigned long int Height() const { return height_; }
-
-        void InitializeModel()
         {
             auto dimensionElement = configuration_["Model"]["Dimensions"];
             if (dimensionElement.is_array())
@@ -51,9 +41,14 @@ namespace embeddedpenguins::life::infrastructure
                 width_ = dimensionArray[0];
                 height_ = dimensionArray[1];
             }
+        }
 
+        const unsigned long int Width() const { return width_; }
+        const unsigned long int Height() const { return height_; }
+
+        void InitializeModel()
+        {
             auto modelSize = width_ * height_;
-            cout << "Using width = " << width_ << ", height = " << height_ << ", modelsize = " << modelSize << "\n";
             modelCarrier_.Model.resize(modelSize);
         }
 

@@ -52,7 +52,6 @@ namespace embeddedpenguins::modelengine::sdk
         json configuration_ {};
         json monitor_ {};
         json settings_ {};
-        MODELCARRIERTYPE carrier_;
         unique_ptr<ModelEngine<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>> modelEngine_ {};
         string modelInitializerLocation_ {};
 
@@ -64,11 +63,9 @@ namespace embeddedpenguins::modelengine::sdk
         const json& Settings() const { return settings_; }
         const microseconds EnginePeriod() const { return modelEngine_->EnginePeriod(); }
         microseconds& EnginePeriod() { return modelEngine_->EnginePeriod(); }
-        MODELCARRIERTYPE GetModel() { return carrier_; }
 
     public:
-        ModelRunner(int argc, char* argv[], MODELCARRIERTYPE carrier) :
-            carrier_(carrier)
+        ModelRunner(int argc, char* argv[])
         {
             ParseArgs(argc, argv);
             LoadSettings();
@@ -90,12 +87,12 @@ namespace embeddedpenguins::modelengine::sdk
         // Ensure the model is created and initialized, then start
         // it running asynchronously.
         //
-        bool Run()
+        bool Run(MODELCARRIERTYPE& carrier)
         {
             if (!valid_)
                 return false;
 
-            return RunModelEngine();
+            return RunModelEngine(carrier);
         }
 
         //
@@ -243,11 +240,11 @@ namespace embeddedpenguins::modelengine::sdk
             monitor >> monitor_;
         }
 
-        bool RunModelEngine()
+        bool RunModelEngine(MODELCARRIERTYPE& carrier)
         {
             // Create the proxy with a two-step ctor-create sequence.
             ModelInitializerProxy<NODETYPE, OPERATORTYPE, MODELCARRIERTYPE, RECORDTYPE> initializer(modelInitializerLocation_);
-            initializer.CreateProxy(carrier_, configuration_);
+            initializer.CreateProxy(carrier, configuration_);
 
             // Let the initializer initialize the model's static state.
             initializer.Initialize();
@@ -259,16 +256,13 @@ namespace embeddedpenguins::modelengine::sdk
                 ticks = modelTicks.get<int>();
 
             modelEngine_ = make_unique<ModelEngine<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>>(
-                carrier_, 
+                carrier, 
                 microseconds(ticks),
                 configuration_);
 
             modelEngine_->RecordFile(ComposeRecordPath());
             modelEngine_->LogFile(ComposeLoggingPath());
             modelEngine_->Run();
-
-            // After the model is running, let the initializer inject a startup work load.
-            modelEngine_->InitializeModel(initializer);
 
             return true;
         }

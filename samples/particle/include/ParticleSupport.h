@@ -29,8 +29,8 @@ namespace embeddedpenguins::particle::infrastructure
 
     class ParticleSupport
     {
-        ParticleModelCarrier modelCarrier_;
-        json& configuration_;
+        ParticleModelCarrier& modelCarrier_;
+        const json& configuration_;
 
         unsigned long int width_ { 100 };
         unsigned long int height_ { 100 };
@@ -41,14 +41,9 @@ namespace embeddedpenguins::particle::infrastructure
         const unsigned long int Height() const { return height_; }
 
     public:
-        ParticleSupport(ParticleModelCarrier modelCarrier, json& configuration) :
+        ParticleSupport(ParticleModelCarrier& modelCarrier, const json& configuration) :
             modelCarrier_(modelCarrier),
             configuration_(configuration)
-        {
-
-        }
-
-        void InitializeModel()
         {
             auto dimensionElement = configuration_["Model"]["Dimensions"];
             if (dimensionElement.is_array())
@@ -57,7 +52,10 @@ namespace embeddedpenguins::particle::infrastructure
                 width_ = dimensionArray[0];
                 height_ = dimensionArray[1];
             }
+        }
 
+        void InitializeModel()
+        {
             auto modelSize = width_ * height_;
             cout << "Using width = " << width_ << ", height = " << height_ << ", modelsize = " << modelSize << "\n";
             modelCarrier_.Model.resize(modelSize);

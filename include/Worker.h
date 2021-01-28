@@ -37,7 +37,7 @@ namespace embeddedpenguins::modelengine::threads
     public:
         Worker() = delete;
 
-        Worker(MODELCARRIERTYPE carrier, int workerId, microseconds& enginePeriod, 
+        Worker(MODELCARRIERTYPE& carrier, int workerId, microseconds& enginePeriod, 
                     const json& configuration, 
                     unsigned long long int segmentStart, unsigned long long int segmentEnd, 
                     unsigned long long int& iterations, 

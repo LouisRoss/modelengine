@@ -29,11 +29,16 @@ namespace embeddedpenguins::life::infrastructure
 
     class ModelLifeInitializer : public ModelInitializer<LifeOperation, LifeSupport, LifeRecord>
     {
-        vector<unsigned long long int> initializedCells_ { };
-
     public:
-        ModelLifeInitializer(LifeModelCarrier carrier, json& configuration);
-        virtual void Initialize() override;
-        virtual void InjectSignal(ProcessCallback<LifeOperation, LifeRecord>& callback) override;
+        ModelLifeInitializer(json& configuration, LifeSupport helper) :
+            ModelInitializer<LifeOperation, LifeSupport, LifeRecord>(configuration, helper)
+        {
+
+        }
+
+        virtual void Initialize() override
+        {
+            helper_.InitializeModel();
+        }
     };
 }

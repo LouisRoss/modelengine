@@ -56,7 +56,7 @@ namespace embeddedpenguins::modelengine
     public:
         ModelEngine() = delete;
 
-        ModelEngine(MODELCARRIERTYPE carrier, microseconds enginePeriod, const json& configuration, int segmentCount = 0) :
+        ModelEngine(MODELCARRIERTYPE& carrier, microseconds enginePeriod, const json& configuration, int segmentCount = 0) :
             contextOp_(context_)
         {
             context_.WorkerCount = segmentCount;
@@ -83,14 +83,6 @@ namespace embeddedpenguins::modelengine
                 std::this_thread::yield();
         }
 
-        void InitializeModel(ModelInitializerProxy<NODETYPE, OPERATORTYPE, MODELCARRIERTYPE, RECORDTYPE>& initializer)
-        {
-            lock_guard<mutex> lock(context_.PartitioningMutex);
-            ProcessCallback callback(context_.ExternalWorkSource);
-            
-            initializer.InjectSignal(callback);
-        }
-
         void Quit()
         {
             contextOp_.SignalQuit();
@@ -108,7 +100,7 @@ namespace embeddedpenguins::modelengine
         }
 
     private:
-        void CreateWorkerThread(MODELCARRIERTYPE carrier)
+        void CreateWorkerThread(MODELCARRIERTYPE& carrier)
         {
             unique_ptr<IModelEnginePartitioner> partitioner { };
             switch (partitionPolicy_)

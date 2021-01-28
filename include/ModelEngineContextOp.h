@@ -31,7 +31,7 @@ namespace embeddedpenguins::modelengine
 
         }
 
-        void CreateWorkers(MODELCARRIERTYPE carrier)
+        void CreateWorkers(MODELCARRIERTYPE& carrier)
         {
             auto segmentSize = carrier.ModelSize() / context_.WorkerCount;
             long long int segmentStart { 0LL };

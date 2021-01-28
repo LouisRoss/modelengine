@@ -51,7 +51,7 @@ namespace embeddedpenguins::modelengine
 
         ModelEngineContext<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>& context_;
         ModelEngineContextOp<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE> contextOp_;
-        MODELCARRIERTYPE carrier_;
+        MODELCARRIERTYPE& carrier_;
         IMPLEMENTATIONTYPE WorkSource_;
         ProcessCallback<OPERATORTYPE, RECORDTYPE> callback_;
 
@@ -59,7 +59,7 @@ namespace embeddedpenguins::modelengine
         ModelEngineThread() = delete;
         ModelEngineThread(
                         ModelEngineContext<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>& context, 
-                        MODELCARRIERTYPE carrier, 
+                        MODELCARRIERTYPE& carrier, 
                         unique_ptr<IModelEnginePartitioner>& partitioner, 
                         unique_ptr<IModelEngineWaiter>& waiter) :
             waiter_(std::move(waiter)),
