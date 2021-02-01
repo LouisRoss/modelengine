@@ -7,6 +7,7 @@
 
 #include "nlohmann/json.hpp"
 
+#include "ModelEngineCommon.h"
 #include "IModelInitializer.h"
 
 namespace embeddedpenguins::modelengine::sdk
@@ -17,6 +18,8 @@ namespace embeddedpenguins::modelengine::sdk
 
     using nlohmann::json;
 
+    using embeddedpenguins::modelengine::ConfigurationUtilities;
+
     //
     // This proxy class implements the IModelInitializer<> interface by loading the
     // named shared library.  The shared library must contain a class that also implements
@@ -26,7 +29,7 @@ namespace embeddedpenguins::modelengine::sdk
     template<class NODETYPE, class OPERATORTYPE, class MODELCARRIERTYPE, class RECORDTYPE>
     class ModelInitializerProxy : IModelInitializer<OPERATORTYPE, RECORDTYPE>
     {
-        using InitializerCreator = IModelInitializer<OPERATORTYPE, RECORDTYPE>* (*)(MODELCARRIERTYPE&, json&);
+        using InitializerCreator = IModelInitializer<OPERATORTYPE, RECORDTYPE>* (*)(MODELCARRIERTYPE&, ConfigurationUtilities&);
         using InitializerDeleter = void (*)(IModelInitializer<OPERATORTYPE, RECORDTYPE>*);
 
         const string initializerSharedLibraryPath_ {};
@@ -57,7 +60,7 @@ namespace embeddedpenguins::modelengine::sdk
                 dlclose(initializerLibrary_);
         }
 
-        void CreateProxy(MODELCARRIERTYPE& carrier, json& configuration)
+        void CreateProxy(MODELCARRIERTYPE& carrier, ConfigurationUtilities& configuration)
         {
             LoadInitializer();
             if (createInitializer_ != nullptr)

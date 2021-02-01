@@ -11,7 +11,7 @@ namespace embeddedpenguins::life::infrastructure
     
     // the class factories
 
-    extern "C" IModelInitializer<LifeOperation, LifeRecord>* create(LifeModelCarrier& carrier, json& configuration) {
+    extern "C" IModelInitializer<LifeOperation, LifeRecord>* create(LifeModelCarrier& carrier, ConfigurationUtilities& configuration) {
         return new ModelLifeInitializer(configuration, LifeSupport(carrier, configuration));
     }
 

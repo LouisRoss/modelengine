@@ -1,7 +1,6 @@
 #pragma once
 
-#include "nlohmann/json.hpp"
-
+#include "ModelEngineCommon.h"
 #include "sdk/ModelInitializer.h"
 
 #include "ParticleOperation.h"
@@ -10,14 +9,13 @@
 
 namespace embeddedpenguins::particle::infrastructure
 {
-    using nlohmann::json;
-
+    using embeddedpenguins::modelengine::ConfigurationUtilities;
     using embeddedpenguins::modelengine::sdk::ModelInitializer;
 
     class ParticleModelInitializer : public ModelInitializer<ParticleOperation, ParticleSupport, ParticleRecord>
     {
     public:
-        ParticleModelInitializer(json& configuration, ParticleSupport helper) :
+        ParticleModelInitializer(ConfigurationUtilities& configuration, ParticleSupport helper) :
             ModelInitializer<ParticleOperation, ParticleSupport, ParticleRecord>(configuration, helper)
         {
         }

@@ -6,6 +6,7 @@
 #include "gtest/gtest.h"
 #include "gmock/gmock.h"
 
+#include "ModelEngineCommon.h"
 #include "ModelEngine.h"
 #include "TestNode.h"
 #include "TestOperation.h"
@@ -27,6 +28,7 @@ namespace test::embeddedpenguins::modelengine::infrastructure
 
   using nlohmann::json;
 
+  using ::embeddedpenguins::modelengine::ConfigurationUtilities;
   using ::embeddedpenguins::modelengine::ModelEngine;
 
   constexpr unsigned long long int modelSize_ = 5'000;
@@ -39,7 +41,7 @@ namespace test::embeddedpenguins::modelengine::infrastructure
     TestModelCarrier carrier_ { .Model = model_ };
     unique_ptr<ModelEngine<TestNode, TestOperation, TestImplementation, TestModelCarrier, TestRecord>> modelEngine_ { };
     nanoseconds duration_ { std::chrono::nanoseconds::min() };
-    json configuration_ {};
+    ConfigurationUtilities configuration_ {};
 
     vector<TestNode>& GetModel() { return model_; }
     ModelEngine<TestNode, TestOperation, TestImplementation, TestModelCarrier, TestRecord>& GetModelEngine() { return *modelEngine_; }
@@ -57,7 +59,7 @@ namespace test::embeddedpenguins::modelengine::infrastructure
     {
       model_.resize(size);
       modelEngine_.reset();
-      modelEngine_ = make_unique<ModelEngine<TestNode, TestOperation, TestImplementation, TestModelCarrier, TestRecord>>(carrier_, microseconds(1'000), workerCount);
+      modelEngine_ = make_unique<ModelEngine<TestNode, TestOperation, TestImplementation, TestModelCarrier, TestRecord>>(carrier_, microseconds(1'000), configuration_, workerCount);
       duration_ = nanoseconds::min();
     }
 
@@ -111,7 +113,7 @@ namespace test::embeddedpenguins::modelengine::infrastructure
     RunStopModelEngine();
 
     // Assert
-    EXPECT_EQ(modelEngine_->GetWorkerCount(), 7);
+    EXPECT_EQ(modelEngine_->GetWorkerCount(), 2);
   }
 
   TEST_F(WhenRunningAModel, ModelEngineStoppedReturnsZeroIterations)

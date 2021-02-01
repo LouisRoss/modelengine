@@ -1,11 +1,11 @@
 #pragma once
 
+#include "ModelEngineCommon.h"
 #include "IModelInitializer.h"
-#include "nlohmann/json.hpp"
 
 namespace embeddedpenguins::modelengine::sdk
 {
-    using nlohmann::json;
+    using embeddedpenguins::modelengine::ConfigurationUtilities;
 
     //
     // Base class for all model initializers.  Since an initializer
@@ -15,11 +15,11 @@ namespace embeddedpenguins::modelengine::sdk
     class ModelInitializer : public IModelInitializer<OPERATORTYPE, RECORDTYPE>
     {
     protected:
-        json& configuration_;
+        ConfigurationUtilities& configuration_;
         MODELHELPERTYPE helper_;
 
     public:
-        ModelInitializer(json& configuration, MODELHELPERTYPE helper) :
+        ModelInitializer(ConfigurationUtilities& configuration, MODELHELPERTYPE helper) :
             configuration_(configuration),
             helper_(helper)
         {

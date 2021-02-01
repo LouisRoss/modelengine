@@ -7,8 +7,6 @@
 #include <algorithm>
 #include <cmath>
 
-#include "nlohmann/json.hpp"
-
 #include "WorkerThread.h"
 #include "WorkItem.h"
 #include "ProcessCallback.h"
@@ -33,8 +31,7 @@ namespace embeddedpenguins::particle::infrastructure
     using std::tuple;
     using std::abs;
 
-    using nlohmann::json;
-
+    using embeddedpenguins::modelengine::ConfigurationUtilities;
     using ::embeddedpenguins::modelengine::threads::WorkerThread;
     using ::embeddedpenguins::modelengine::threads::ProcessCallback;
     using ::embeddedpenguins::modelengine::Log;
@@ -47,7 +44,7 @@ namespace embeddedpenguins::particle::infrastructure
     {
         int workerId_;
         ParticleModelCarrier& carrier_;
-        const json& configuration_;
+        const ConfigurationUtilities& configuration_;
 
         unsigned long int width_ { 100 };
         unsigned long int height_ { 100 };
@@ -67,13 +64,13 @@ namespace embeddedpenguins::particle::infrastructure
         // Allow the template library to pass in the model and configuration
         // to each worker thread that is created.
         //
-        ParticleImplementation(int workerId, ParticleModelCarrier& carrier, const json& configuration) :
+        ParticleImplementation(int workerId, ParticleModelCarrier& carrier, const ConfigurationUtilities& configuration) :
             workerId_(workerId),
             carrier_(carrier),
             configuration_(configuration)
         {
             // Override the dimension defaults if configured.
-            auto dimensionElement = configuration_["Model"]["Dimensions"];
+            auto dimensionElement = configuration_.Configuration()["Model"]["Dimensions"];
             if (dimensionElement.is_array())
             {
                 auto dimensionArray = dimensionElement.get<vector<int>>();

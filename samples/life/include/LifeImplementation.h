@@ -5,8 +5,7 @@
 #include <algorithm>
 #include <math.h>
 
-#include "nlohmann/json.hpp"
-
+#include "ModelEngineCommon.h"
 #include "WorkerThread.h"
 #include "WorkItem.h"
 #include "ProcessCallback.h"
@@ -26,8 +25,7 @@ namespace embeddedpenguins::life::infrastructure
     using std::vector;
     using std::unique;
 
-    using nlohmann::json;
-
+    using embeddedpenguins::modelengine::ConfigurationUtilities;
     using ::embeddedpenguins::modelengine::threads::WorkerThread;
     using ::embeddedpenguins::modelengine::threads::ProcessCallback;
     using ::embeddedpenguins::modelengine::Log;
@@ -50,7 +48,7 @@ namespace embeddedpenguins::life::infrastructure
     {
         int workerId_;
         LifeModelCarrier& carrier_;
-        const json& configuration_;
+        const ConfigurationUtilities& configuration_;
 
         unsigned long int width_ { 100 };
         unsigned long int height_ { 100 };
@@ -78,13 +76,13 @@ namespace embeddedpenguins::life::infrastructure
         // Allow the template library to pass in the model and configuration
         // to each worker thread that is created.
         //
-        LifeImplementation(int workerId, LifeModelCarrier& carrier, const json& configuration) :
+        LifeImplementation(int workerId, LifeModelCarrier& carrier, const ConfigurationUtilities& configuration) :
             workerId_(workerId),
             carrier_(carrier),
             configuration_(configuration)
         {
             // Override the dimension defaults if configured.
-            auto dimensionElement = configuration_["Model"]["Dimensions"];
+            auto dimensionElement = configuration_.Configuration()["Model"]["Dimensions"];
             if (dimensionElement.is_array())
             {
                 auto dimensionArray = dimensionElement.get<vector<int>>();

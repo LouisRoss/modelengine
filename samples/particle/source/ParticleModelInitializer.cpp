@@ -11,7 +11,7 @@ namespace embeddedpenguins::particle::infrastructure
 
     // the class factories
 
-    extern "C" IModelInitializer<ParticleOperation, ParticleRecord>* create(ParticleModelCarrier& carrier, json& configuration) {
+    extern "C" IModelInitializer<ParticleOperation, ParticleRecord>* create(ParticleModelCarrier& carrier, ConfigurationUtilities& configuration) {
         return new ParticleModelInitializer(configuration, ParticleSupport(carrier, configuration));
     }
 
