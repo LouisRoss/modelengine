@@ -21,7 +21,7 @@ namespace embeddedpenguins::modelengine::threads
     // The worker object uses synchronization objects in its context
     // to control its worker thread.
     //
-    template<class NODETYPE, class OPERATORTYPE, class IMPLEMENTATIONTYPE, class MODELCARRIERTYPE, class RECORDTYPE>
+    template<class OPERATORTYPE, class IMPLEMENTATIONTYPE, class MODELCARRIERTYPE, class RECORDTYPE>
     class Worker
     {
         thread workerThread_;

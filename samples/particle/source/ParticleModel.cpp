@@ -53,8 +53,8 @@ unsigned long int height { 100 };
 unsigned long int centerWidth {};
 unsigned long int centerHeight {};
 
-char PrintAndListenForQuit(ModelRunner<ParticleNode, ParticleOperation, ParticleImplementation, ParticleModelCarrier, ParticleRecord>& modelRunner, ParticleModelCarrier& carrier);
-void PrintLifeScan(ModelRunner<ParticleNode, ParticleOperation, ParticleImplementation, ParticleModelCarrier, ParticleRecord>& modelRunner, ParticleModelCarrier& carrier);
+char PrintAndListenForQuit(ModelRunner<ParticleOperation, ParticleImplementation, ParticleModelCarrier, ParticleRecord>& modelRunner, ParticleModelCarrier& carrier);
+void PrintLifeScan(ModelRunner<ParticleOperation, ParticleImplementation, ParticleModelCarrier, ParticleRecord>& modelRunner, ParticleModelCarrier& carrier);
 void ParseArguments(int argc, char* argv[]);
 
 ///////////////////////////////////////////////////////////////////////////
@@ -65,7 +65,7 @@ int main(int argc, char* argv[])
 {
     ParseArguments(argc, argv);
     vector<ParticleNode> model;
-    ModelRunner<ParticleNode, ParticleOperation, ParticleImplementation, ParticleModelCarrier, ParticleRecord> modelRunner(argc, argv);
+    ModelRunner<ParticleOperation, ParticleImplementation, ParticleModelCarrier, ParticleRecord> modelRunner(argc, argv);
     ParticleModelCarrier carrier { .Model = model };
 
     auto& configuration = modelRunner.Configuration();
@@ -91,7 +91,7 @@ int main(int argc, char* argv[])
     return 0;
 }
 
-char PrintAndListenForQuit(ModelRunner<ParticleNode, ParticleOperation, ParticleImplementation, ParticleModelCarrier, ParticleRecord>& modelRunner, ParticleModelCarrier& carrier)
+char PrintAndListenForQuit(ModelRunner<ParticleOperation, ParticleImplementation, ParticleModelCarrier, ParticleRecord>& modelRunner, ParticleModelCarrier& carrier)
 {
     constexpr char KEY_UP = 'A';
     constexpr char KEY_DOWN = 'B';
@@ -160,7 +160,7 @@ char PrintAndListenForQuit(ModelRunner<ParticleNode, ParticleOperation, Particle
     return c;
 }
 
-void PrintLifeScan(ModelRunner<ParticleNode, ParticleOperation, ParticleImplementation, ParticleModelCarrier, ParticleRecord>& modelRunner, ParticleModelCarrier& carrier)
+void PrintLifeScan(ModelRunner<ParticleOperation, ParticleImplementation, ParticleModelCarrier, ParticleRecord>& modelRunner, ParticleModelCarrier& carrier)
 {
     constexpr int windowWidth = 100;
     constexpr int windowHeight = 30;

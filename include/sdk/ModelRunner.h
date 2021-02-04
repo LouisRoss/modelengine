@@ -40,18 +40,18 @@ namespace embeddedpenguins::modelengine::sdk
     // When using the ModelRunner to run a model, it owns the model (a vector of NODETYPE),
     // the model engine object, and all configuration defined for the model.
     //
-    template<class NODETYPE, class OPERATORTYPE, class IMPLEMENTATIONTYPE, class MODELCARRIERTYPE, class RECORDTYPE>
+    template<class OPERATORTYPE, class IMPLEMENTATIONTYPE, class MODELCARRIERTYPE, class RECORDTYPE>
     class ModelRunner
     {
         bool valid_ { false };
         string controlFile_ {};
 
         ConfigurationUtilities configuration_ {};
-        unique_ptr<ModelEngine<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>> modelEngine_ {};
+        unique_ptr<ModelEngine<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>> modelEngine_ {};
         string modelInitializerLocation_ {};
 
     public:
-        ModelEngine<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>& GetModelEngine() { return *modelEngine_.get(); }
+        ModelEngine<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>& GetModelEngine() { return *modelEngine_.get(); }
         const ConfigurationUtilities& ConfigurationCarrier() const { return configuration_; }
         const json& Control() const { return configuration_.Control(); }
         const json& Configuration() const { return configuration_.Configuration(); }
@@ -143,7 +143,7 @@ namespace embeddedpenguins::modelengine::sdk
         bool RunModelEngine(MODELCARRIERTYPE& carrier)
         {
             // Create the proxy with a two-step ctor-create sequence.
-            ModelInitializerProxy<NODETYPE, OPERATORTYPE, MODELCARRIERTYPE, RECORDTYPE> initializer(modelInitializerLocation_);
+            ModelInitializerProxy<OPERATORTYPE, MODELCARRIERTYPE, RECORDTYPE> initializer(modelInitializerLocation_);
             initializer.CreateProxy(carrier, configuration_);
 
             // Let the initializer initialize the model's static state.
@@ -155,7 +155,7 @@ namespace embeddedpenguins::modelengine::sdk
             if (modelTicks.is_number_integer() || modelTicks.is_number_unsigned())
                 ticks = modelTicks.get<int>();
 
-            modelEngine_ = make_unique<ModelEngine<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>>(
+            modelEngine_ = make_unique<ModelEngine<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>>(
                 carrier, 
                 microseconds(ticks),
                 configuration_);
