@@ -7,6 +7,7 @@
 
 #include "nlohmann/json.hpp"
 
+#include "ModelEngineCommon.h"
 #include "IModelInitializer.h"
 
 namespace embeddedpenguins::modelengine::sdk
@@ -17,6 +18,8 @@ namespace embeddedpenguins::modelengine::sdk
 
     using nlohmann::json;
 
+    using embeddedpenguins::modelengine::ConfigurationUtilities;
+
     //
     // This proxy class implements the IModelInitializer<> interface by loading the
     // named shared library.  The shared library must contain a class that also implements
@@ -26,7 +29,7 @@ namespace embeddedpenguins::modelengine::sdk
     template<class NODETYPE, class OPERATORTYPE, class MODELCARRIERTYPE, class RECORDTYPE>
     class ModelInitializerProxy : IModelInitializer<OPERATORTYPE, RECORDTYPE>
     {
-        using InitializerCreator = IModelInitializer<OPERATORTYPE, RECORDTYPE>* (*)(MODELCARRIERTYPE, json&);
+        using InitializerCreator = IModelInitializer<OPERATORTYPE, RECORDTYPE>* (*)(MODELCARRIERTYPE&, ConfigurationUtilities&);
         using InitializerDeleter = void (*)(IModelInitializer<OPERATORTYPE, RECORDTYPE>*);
 
         const string initializerSharedLibraryPath_ {};
@@ -39,7 +42,7 @@ namespace embeddedpenguins::modelengine::sdk
 
     public:
         //
-        // Use of a two-step creation process is mandaory:  Instantiate a proxy with the
+        // Use of a two-step creation process is mandatory:  Instantiate a proxy with the
         // path to the shared library, then call CreateProxy() with the model.
         //
         ModelInitializerProxy(const string& initializerSharedLibraryPath) :
@@ -48,7 +51,7 @@ namespace embeddedpenguins::modelengine::sdk
             cout << "ModelInitializerProxy ctor(" << initializerSharedLibraryPath << ")\n";
         }
 
-        ~ModelInitializerProxy()
+        ~ModelInitializerProxy() override
         {
             if (deleteInitializer_ != nullptr)
                 deleteInitializer_(initializer_);
@@ -57,7 +60,7 @@ namespace embeddedpenguins::modelengine::sdk
                 dlclose(initializerLibrary_);
         }
 
-        void CreateProxy(MODELCARRIERTYPE carrier, json& configuration)
+        void CreateProxy(MODELCARRIERTYPE& carrier, ConfigurationUtilities& configuration)
         {
             LoadInitializer();
             if (createInitializer_ != nullptr)
@@ -72,12 +75,6 @@ namespace embeddedpenguins::modelengine::sdk
                 initializer_->Initialize();
         }
 
-        virtual void InjectSignal(ProcessCallback<OPERATORTYPE, RECORDTYPE>& callback) override
-        {
-            if (initializer_ && valid_)
-                initializer_->InjectSignal(callback);
-        }
-
     private:
         void LoadInitializer()
         {
@@ -86,7 +83,7 @@ namespace embeddedpenguins::modelengine::sdk
             initializerLibrary_ = dlopen(initializerSharedLibraryPath_.c_str(), RTLD_LAZY);
             if (!initializerLibrary_)
             {
-                cout << "Cannot load library '" << initializer_ << "': " << dlerror() << "\n";
+                cout << "Cannot load library '" << initializerSharedLibraryPath_ << "': " << dlerror() << "\n";
                 valid_ = false;
                 return;
             }

@@ -3,8 +3,6 @@
 #include <thread>
 #include <chrono>
 
-#include "nlohmann/json.hpp"
-
 #include "ModelEngineContextOp.h"
 #include "ModelEngineThread.h"
 #include "sdk/ModelInitializerProxy.h"
@@ -18,8 +16,6 @@ namespace embeddedpenguins::modelengine
     using std::chrono::nanoseconds;
     using std::chrono::high_resolution_clock;
     using time_point = std::chrono::high_resolution_clock::time_point;
-
-    using nlohmann::json;
 
     using embeddedpenguins::modelengine::threads::ProcessCallback;
     using embeddedpenguins::modelengine::sdk::ModelInitializerProxy;
@@ -56,7 +52,7 @@ namespace embeddedpenguins::modelengine
     public:
         ModelEngine() = delete;
 
-        ModelEngine(MODELCARRIERTYPE carrier, microseconds enginePeriod, const json& configuration, int segmentCount = 0) :
+        ModelEngine(MODELCARRIERTYPE& carrier, microseconds enginePeriod, const ConfigurationUtilities& configuration, int segmentCount = 0) :
             contextOp_(context_)
         {
             context_.WorkerCount = segmentCount;
@@ -83,14 +79,6 @@ namespace embeddedpenguins::modelengine
                 std::this_thread::yield();
         }
 
-        void InitializeModel(ModelInitializerProxy<NODETYPE, OPERATORTYPE, MODELCARRIERTYPE, RECORDTYPE>& initializer)
-        {
-            lock_guard<mutex> lock(context_.PartitioningMutex);
-            ProcessCallback callback(context_.ExternalWorkSource);
-            
-            initializer.InjectSignal(callback);
-        }
-
         void Quit()
         {
             contextOp_.SignalQuit();
@@ -108,7 +96,7 @@ namespace embeddedpenguins::modelengine
         }
 
     private:
-        void CreateWorkerThread(MODELCARRIERTYPE carrier)
+        void CreateWorkerThread(MODELCARRIERTYPE& carrier)
         {
             unique_ptr<IModelEnginePartitioner> partitioner { };
             switch (partitionPolicy_)

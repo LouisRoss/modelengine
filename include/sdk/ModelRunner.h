@@ -6,10 +6,11 @@
 #include <memory>
 #include <vector>
 #include <iostream>
-#include <filesystem>
+#include <fstream>
 
 #include "nlohmann/json.hpp"
 
+#include "ModelEngineCommon.h"
 #include "ModelEngine.h"
 #include "ModelInitializerProxy.h"
 
@@ -24,9 +25,9 @@ namespace embeddedpenguins::modelengine::sdk
     using std::vector;
     using std::cout;
     using std::ifstream;
-    using std::filesystem::create_directories;
     using nlohmann::json;
     using embeddedpenguins::modelengine::ModelEngine;
+    using embeddedpenguins::modelengine::ConfigurationUtilities;
 
     //
     // Wrap the most common startup and teardown sequences to run a model
@@ -43,59 +44,44 @@ namespace embeddedpenguins::modelengine::sdk
     class ModelRunner
     {
         bool valid_ { false };
-        string configurationPath_ {};
         string controlFile_ {};
-        string configFile_ {};
-        string monitorFile_ {};
-        string settingsFile_ { "./ModelSettings.json" };
-        json control_ {};
-        json configuration_ {};
-        json monitor_ {};
-        json settings_ {};
-        MODELCARRIERTYPE carrier_;
+
+        ConfigurationUtilities configuration_ {};
         unique_ptr<ModelEngine<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>> modelEngine_ {};
         string modelInitializerLocation_ {};
 
     public:
         ModelEngine<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>& GetModelEngine() { return *modelEngine_.get(); }
-        const json& Control() const { return control_; }
-        const json& Configuration() const { return configuration_; }
-        const json& Monitor() const { return monitor_; }
-        const json& Settings() const { return settings_; }
+        const ConfigurationUtilities& ConfigurationCarrier() const { return configuration_; }
+        const json& Control() const { return configuration_.Control(); }
+        const json& Configuration() const { return configuration_.Configuration(); }
+        const json& Monitor() const { return configuration_.Monitor(); }
+        const json& Settings() const { return configuration_.Settings(); }
         const microseconds EnginePeriod() const { return modelEngine_->EnginePeriod(); }
         microseconds& EnginePeriod() { return modelEngine_->EnginePeriod(); }
-        MODELCARRIERTYPE GetModel() { return carrier_; }
 
     public:
-        ModelRunner(int argc, char* argv[], MODELCARRIERTYPE carrier) :
-            carrier_(carrier)
+        ModelRunner(int argc, char* argv[])
         {
             ParseArgs(argc, argv);
-            LoadSettings();
 
             if (valid_)
-                LoadControl();
+                valid_ = configuration_.InitializeConfiguration(controlFile_);
 
             if (valid_)
-                LoadConfiguration();
-
-            if (valid_)
-                LoadMonitor();
-
-            if (valid_)
-                modelInitializerLocation_ = configuration_["Execution"]["InitializerLocation"].get<string>();
+                modelInitializerLocation_ = configuration_.Configuration()["Execution"]["InitializerLocation"].get<string>();
         }
 
         //
         // Ensure the model is created and initialized, then start
         // it running asynchronously.
         //
-        bool Run()
+        bool Run(MODELCARRIERTYPE& carrier)
         {
             if (!valid_)
                 return false;
 
-            return RunModelEngine();
+            return RunModelEngine(carrier);
         }
 
         //
@@ -109,7 +95,7 @@ namespace embeddedpenguins::modelengine::sdk
         }
 
         //
-        // Cal Quit() and wait until the model engine stops.
+        // Call Quit() and wait until the model engine stops.
         // It is legal to call this after Quit().
         //
         void WaitForQuit()
@@ -154,177 +140,31 @@ namespace embeddedpenguins::modelengine::sdk
             valid_ = true;
         }
 
-        void LoadSettings()
-        {
-            if (settingsFile_.length() < 5 || settingsFile_.substr(settingsFile_.length()-5, settingsFile_.length()) != ".json")
-                settingsFile_ += ".json";
-
-            struct stat buffer;   
-            if (!(stat (settingsFile_.c_str(), &buffer) == 0))
-            {
-                cout << "Settings file " << settingsFile_ << " does not exist, using defaults\n";
-                return;
-            }
-
-            cout << "LoadSettings from " << settingsFile_ << "\n";
-            ifstream settings(settingsFile_);
-            settings >> settings_;
-
-            configurationPath_ = "./";
-            auto configFilePath = settings_["ConfigFilePath"];
-            if (!configFilePath.is_null())
-            {
-                configurationPath_ = string(configFilePath);
-                configurationPath_.erase(remove(begin(configurationPath_), end(configurationPath_), '\"'), end(configurationPath_));
-            }
-        }
-
-        void LoadControl()
-        {
-            controlFile_ = configurationPath_ + "/" + controlFile_;
-            cout << "Using control file " << controlFile_ << "\n";
-
-            struct stat buffer;   
-            if (!(stat (controlFile_.c_str(), &buffer) == 0))
-            {
-                cout << "Control file " << controlFile_ << " does not exist\n";
-                valid_ = false;
-                return;
-            }
-
-            cout << "LoadControl from " << controlFile_ << "\n";
-            ifstream control(controlFile_);
-            control >> control_;
-        }
-
-        void LoadConfiguration()
-        {
-            configFile_ = control_["Configuration"];
-            configFile_.erase(remove(begin(configFile_), end(configFile_), '\"'), end(configFile_));
-            if (configFile_.length() < 5 || configFile_.substr(configFile_.length()-5, configFile_.length()) != ".json")
-                configFile_ += ".json";
-
-            configFile_ = configurationPath_ + "/" + configFile_;
-            cout << "Using config file " << configFile_ << "\n";
-
-            struct stat buffer;   
-            if (!(stat (configFile_.c_str(), &buffer) == 0))
-            {
-                cout << "Configuration file " << configFile_ << " does not exist\n";
-                valid_ = false;
-                return;
-            }
-
-            cout << "LoadConfiguration from " << configFile_ << "\n";
-            ifstream config(configFile_);
-            config >> configuration_;
-        }
-
-        void LoadMonitor()
-        {
-            monitorFile_ = control_["Monitor"];
-            monitorFile_.erase(remove(begin(monitorFile_), end(monitorFile_), '\"'), end(monitorFile_));
-            if (monitorFile_.length() < 5 || monitorFile_.substr(monitorFile_.length()-5, monitorFile_.length()) != ".json")
-                monitorFile_ += ".json";
-
-            monitorFile_ = configurationPath_ + "/" + monitorFile_;
-            cout << "Using monitor file " << monitorFile_ << "\n";
-
-            struct stat buffer;   
-            if (!(stat (monitorFile_.c_str(), &buffer) == 0))
-            {
-                // Non-fatal error, leave valid_ as-is.
-                cout << "Monitor file " << monitorFile_ << " does not exist\n";
-                return;
-            }
-
-            cout << "LoadMonitor from " << monitorFile_ << "\n";
-            ifstream monitor(monitorFile_);
-            monitor >> monitor_;
-        }
-
-        bool RunModelEngine()
+        bool RunModelEngine(MODELCARRIERTYPE& carrier)
         {
             // Create the proxy with a two-step ctor-create sequence.
             ModelInitializerProxy<NODETYPE, OPERATORTYPE, MODELCARRIERTYPE, RECORDTYPE> initializer(modelInitializerLocation_);
-            initializer.CreateProxy(carrier_, configuration_);
+            initializer.CreateProxy(carrier, configuration_);
 
             // Let the initializer initialize the model's static state.
             initializer.Initialize();
 
             // Create and run the model engine.
-            auto modelTicks = configuration_["Model"]["ModelTicks"];
+            auto modelTicks = configuration_.Configuration()["Model"]["ModelTicks"];
             auto ticks { 1000 };
             if (modelTicks.is_number_integer() || modelTicks.is_number_unsigned())
                 ticks = modelTicks.get<int>();
 
             modelEngine_ = make_unique<ModelEngine<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>>(
-                carrier_, 
+                carrier, 
                 microseconds(ticks),
                 configuration_);
 
-            modelEngine_->RecordFile(ComposeRecordPath());
-            modelEngine_->LogFile(ComposeLoggingPath());
+            modelEngine_->RecordFile(configuration_.ComposeRecordPath());
+            modelEngine_->LogFile(configuration_.ExtractRecordDirectory() + modelEngine_->LogFile());
             modelEngine_->Run();
 
-            // After the model is running, let the initializer inject a startup work load.
-            modelEngine_->InitializeModel(initializer);
-
             return true;
-        }
-
-        string ComposeRecordPath()
-        {
-            auto recordDirectory = ExtractRecordDirectory();
-
-            string fileName {"ModelEngineRecord.csv"};
-            auto file(configuration_["PostProcessing"]["RecordFile"]);
-            if (file.is_string())
-                fileName = file.get<string>();
-
-            return recordDirectory + fileName;
-        }
-
-        string ComposeLoggingPath()
-        {
-            auto recordDirectory = ExtractRecordDirectory();
-            auto& fileName = modelEngine_->LogFile();
-
-            return recordDirectory + fileName;
-        }
-
-        string ExtractRecordDirectory()
-        {
-            string recordDirectory {"./"};
-            auto path = configuration_["PostProcessing"]["RecordLocation"];
-            if (path.is_string())
-                recordDirectory = path.get<string>();
-
-            if (recordDirectory[recordDirectory.length() - 1] != '/')
-                recordDirectory += '/';
-
-            auto project = control_["Configuration"];
-            if (project.is_string())
-            {
-                auto configuration= project.get<string>();
-                auto lastSlashPos = configuration.rfind('/');
-                if (lastSlashPos != configuration.npos)
-                    configuration = configuration.substr(lastSlashPos + 1, configuration.size() - lastSlashPos);
-
-                auto jsonExtensionPos = configuration.rfind(".json");
-                if (jsonExtensionPos != configuration.npos)
-                    configuration = configuration.substr(0, jsonExtensionPos);
-
-                recordDirectory += configuration;
-            }
-
-            if (recordDirectory[recordDirectory.length() - 1] != '/')
-                recordDirectory += '/';
-
-            cout << "Record directory: " << recordDirectory << '\n';
-
-            create_directories(recordDirectory);
-            return recordDirectory;
         }
     };
 }

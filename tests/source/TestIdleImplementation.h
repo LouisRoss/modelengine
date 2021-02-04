@@ -5,8 +5,7 @@
 #include <chrono>
 #include <iostream>
 
-#include "nlohmann/json.hpp"
-
+#include "ModelEngineCommon.h"
 #include "WorkerThread.h"
 #include "WorkItem.h"
 #include "ProcessCallback.h"
@@ -25,8 +24,7 @@ namespace test::embeddedpenguins::modelengine::infrastructure
     using std::chrono::milliseconds;
     using time_point = std::chrono::high_resolution_clock::time_point;
 
-    using nlohmann::json;
-
+    using ::embeddedpenguins::modelengine::ConfigurationUtilities;
     using ::embeddedpenguins::modelengine::threads::WorkerThread;
     using ::embeddedpenguins::modelengine::threads::ProcessCallback;
     using ::embeddedpenguins::modelengine::Log;
@@ -44,7 +42,8 @@ namespace test::embeddedpenguins::modelengine::infrastructure
     {
         int workerId_;
         TestModelCarrier carrier_;
-        const json& configuration_;
+        const ConfigurationUtilities& configuration_;
+        bool firstRun_ { true };
 
     public:
         TestIdleImplementation() = delete;
@@ -52,7 +51,7 @@ namespace test::embeddedpenguins::modelengine::infrastructure
         // Required constructor.
         // Allow the template library to pass in the model
         // for each worker thread that is created.
-        TestIdleImplementation(int workerId, TestModelCarrier carrier, const json& configuration) :
+        TestIdleImplementation(int workerId, TestModelCarrier carrier, const ConfigurationUtilities& configuration) :
             workerId_(workerId),
             carrier_(carrier),
             configuration_(configuration)
@@ -60,11 +59,13 @@ namespace test::embeddedpenguins::modelengine::infrastructure
             
         }
 
-        void Initialize(Log& log, Recorder<TestRecord>& record, 
+        void StreamNewInputWork(Log& log, Recorder<TestRecord>& record, 
             unsigned long long int ticksSinceEpoch, 
             ProcessCallback<TestOperation, TestRecord>& callback)
         {
-            callback(TestOperation(1));
+            if (firstRun_) callback(TestOperation(1));
+
+            firstRun_ = false;
         }
 
         // Process but add no new work.  After the first single work item, the whole model will be idle.
@@ -79,10 +80,6 @@ namespace test::embeddedpenguins::modelengine::infrastructure
             {
                 carrier_.Model[work->Operator.Index].Data += workerId_;
             }
-        }
-
-        void Finalize(Log& log, Recorder<TestRecord>& record, int64_t milliseconds_since_epoch)
-        {
         }
     };
 }

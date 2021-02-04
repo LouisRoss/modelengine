@@ -1,25 +1,25 @@
 #pragma once
 
+#include "ModelEngineCommon.h"
 #include "IModelInitializer.h"
-#include "nlohmann/json.hpp"
 
 namespace embeddedpenguins::modelengine::sdk
 {
-    using nlohmann::json;
+    using embeddedpenguins::modelengine::ConfigurationUtilities;
 
     //
     // Base class for all model initializers.  Since an initializer
     // must reference the configuration, a reference to it is captured here.
     //
-    template<class NODETYPE, class OPERATORTYPE, class MODELHELPERTYPE, class RECORDTYPE>
+    template<class OPERATORTYPE, class MODELHELPERTYPE, class RECORDTYPE>
     class ModelInitializer : public IModelInitializer<OPERATORTYPE, RECORDTYPE>
     {
     protected:
-        json& configuration_;
+        ConfigurationUtilities& configuration_;
         MODELHELPERTYPE helper_;
 
     public:
-        ModelInitializer(json& configuration, MODELHELPERTYPE helper) :
+        ModelInitializer(ConfigurationUtilities& configuration, MODELHELPERTYPE helper) :
             configuration_(configuration),
             helper_(helper)
         {

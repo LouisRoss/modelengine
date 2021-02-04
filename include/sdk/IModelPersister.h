@@ -3,24 +3,25 @@
 #include <string>
 #include <vector>
 
-#include "nlohmann/json.hpp"
+#include "ModelEngineCommon.h"
 
 namespace embeddedpenguins::neuron::infrastructure::persistence
 {
     using std::string;
     using std::vector;
-    using nlohmann::json;
+
+    using embeddedpenguins::modelengine::ConfigurationUtilities;
 
     //
     // TODO: Use this interface for persistence of the current state of a model.
     //
-    template<class NODETYPE>
+    template<class MODELCARRIERTYPE>
     class IModelPersister
     {
     public:
         virtual ~IModelPersister() = default;
 
         virtual bool LoadConfiguration() = 0;
-        virtual bool ReadModel(vector<NODETYPE>& model, json& configuration) = 0;
+        virtual bool ReadModel(MODELCARRIERTYPE& carrier, ConfigurationUtilities& configuration) = 0;
     };
 }

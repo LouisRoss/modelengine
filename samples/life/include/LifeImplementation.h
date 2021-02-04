@@ -5,8 +5,7 @@
 #include <algorithm>
 #include <math.h>
 
-#include "nlohmann/json.hpp"
-
+#include "ModelEngineCommon.h"
 #include "WorkerThread.h"
 #include "WorkItem.h"
 #include "ProcessCallback.h"
@@ -26,8 +25,7 @@ namespace embeddedpenguins::life::infrastructure
     using std::vector;
     using std::unique;
 
-    using nlohmann::json;
-
+    using embeddedpenguins::modelengine::ConfigurationUtilities;
     using ::embeddedpenguins::modelengine::threads::WorkerThread;
     using ::embeddedpenguins::modelengine::threads::ProcessCallback;
     using ::embeddedpenguins::modelengine::Log;
@@ -38,9 +36,8 @@ namespace embeddedpenguins::life::infrastructure
     // The implementation of the algorithm for Conway's game of life.
     // Note the required methods and their signatures:
     // * Constructor
-    // * Initialize
+    // * StreamNewInputWork
     // * Process
-    // * Finalize
     //
     // There is no interface to enforce implementation of these required methods.
     // Instead, the compiler will tell you if the implementation is wrong.
@@ -50,12 +47,15 @@ namespace embeddedpenguins::life::infrastructure
     class LifeImplementation : public WorkerThread<LifeOperation, LifeImplementation, LifeRecord>
     {
         int workerId_;
-        LifeModelCarrier carrier_;
-        const json& configuration_;
+        LifeModelCarrier& carrier_;
+        const ConfigurationUtilities& configuration_;
 
         unsigned long int width_ { 100 };
         unsigned long int height_ { 100 };
         unsigned long long int maxIndex_ { };
+
+        bool firstTime_ { true };
+        vector<unsigned long long int> initializedCells_ { };
 
         // The rules of life are captured in this table.
         // The index to the table is an integer bit pattern
@@ -76,13 +76,13 @@ namespace embeddedpenguins::life::infrastructure
         // Allow the template library to pass in the model and configuration
         // to each worker thread that is created.
         //
-        LifeImplementation(int workerId, LifeModelCarrier carrier, const json& configuration) :
+        LifeImplementation(int workerId, LifeModelCarrier& carrier, const ConfigurationUtilities& configuration) :
             workerId_(workerId),
             carrier_(carrier),
             configuration_(configuration)
         {
             // Override the dimension defaults if configured.
-            auto dimensionElement = configuration_["Model"]["Dimensions"];
+            auto dimensionElement = configuration_.Configuration()["Model"]["Dimensions"];
             if (dimensionElement.is_array())
             {
                 auto dimensionArray = dimensionElement.get<vector<int>>();
@@ -95,15 +95,23 @@ namespace embeddedpenguins::life::infrastructure
         }
 
         //
-        // Required Initialize method.  
+        // Required StreamNewInputWork method.  
         // One instance of this class on one thread will be called
-        // here to initialize the model.
-        // Do not use this method to initialize instances of this class.
+        // here each tick to provide new input from external to the model.
+        // It is up to the implementation to connect to the external source.
         //
-        void Initialize(Log& log, Recorder<LifeRecord>& record, 
+        void StreamNewInputWork(Log& log, Recorder<LifeRecord>& record, 
             unsigned long long int tickNow, 
             ProcessCallback<LifeOperation, LifeRecord>& callback)
         {
+            if (firstTime_)
+            {
+                LifeSupport helper(carrier_, configuration_);
+                InitializeLife(helper);
+                helper.SignalInitialCells(initializedCells_, callback);
+            }
+
+            firstTime_ = false;
         }
 
         //
@@ -137,18 +145,19 @@ namespace embeddedpenguins::life::infrastructure
             }
         }
 
-        //
-        // Required Finalize method.
-        // One instance of this class on one thread will be called
-        // here to clean up the model.
-        // Do not use this method as a destructor for instances of this class.
-        // Destructors are allowed -- use one instead.
-        //
-        void Finalize(Log& log, Recorder<LifeRecord>& record, unsigned long long int tickNow)
+    private:
+        void InitializeLife(LifeSupport& helper)
         {
+            initializedCells_.clear();
+
+            auto centerCell = (helper.Width() * helper.Height() / 2) + (helper.Width() / 2);
+
+            helper.MakeGlider(centerCell, initializedCells_);
+            helper.MakeStopSignal(centerCell - (helper.Width() * 10), initializedCells_);
+            helper.MakeStopSignal(centerCell - (helper.Width() * 5) - 15, initializedCells_);
+            helper.InitializeCells(initializedCells_);
         }
 
-    private:
         void ProcessWorkItem(Log& log, Recorder<LifeRecord>& record, 
             unsigned long long int tickNow, 
             const LifeOperation& work, 

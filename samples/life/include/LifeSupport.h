@@ -1,11 +1,8 @@
 #pragma once
 
-#include <iostream>
 #include <vector>
-#include <tuple>
 
-#include "nlohmann/json.hpp"
-
+#include "ModelEngineCommon.h"
 #include "ProcessCallback.h"
 
 #include "LifeOperation.h"
@@ -14,29 +11,31 @@
 
 namespace embeddedpenguins::life::infrastructure
 {
-    using std::cout;
     using std::vector;
-    using std::tuple;
-    using std::make_tuple;
 
-    using nlohmann::json;
-
+    using embeddedpenguins::modelengine::ConfigurationUtilities;
     using embeddedpenguins::modelengine::threads::ProcessCallback;
 
     class LifeSupport
     {
-        LifeModelCarrier modelCarrier_;
-        json& configuration_;
+        LifeModelCarrier& modelCarrier_;
+        const ConfigurationUtilities& configuration_;
 
         unsigned long int width_ { 100 };
         unsigned long int height_ { 100 };
 
     public:
-        LifeSupport(LifeModelCarrier modelCarrier, json& configuration) :
+        LifeSupport(LifeModelCarrier& modelCarrier, const ConfigurationUtilities& configuration) :
             modelCarrier_(modelCarrier),
             configuration_(configuration)
         {
-            
+            auto dimensionElement = configuration_.Configuration()["Model"]["Dimensions"];
+            if (dimensionElement.is_array())
+            {
+                auto dimensionArray = dimensionElement.get<vector<int>>();
+                width_ = dimensionArray[0];
+                height_ = dimensionArray[1];
+            }
         }
 
         const unsigned long int Width() const { return width_; }
@@ -44,16 +43,7 @@ namespace embeddedpenguins::life::infrastructure
 
         void InitializeModel()
         {
-            auto dimensionElement = configuration_["Model"]["Dimensions"];
-            if (dimensionElement.is_array())
-            {
-                auto dimensionArray = dimensionElement.get<vector<int>>();
-                width_ = dimensionArray[0];
-                height_ = dimensionArray[1];
-            }
-
             auto modelSize = width_ * height_;
-            cout << "Using width = " << width_ << ", height = " << height_ << ", modelsize = " << modelSize << "\n";
             modelCarrier_.Model.resize(modelSize);
         }
 

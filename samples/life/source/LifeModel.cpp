@@ -49,8 +49,8 @@ unsigned long int height { 100 };
 unsigned long int centerWidth {};
 unsigned long int centerHeight {};
 
-char PrintAndListenForQuit(ModelRunner<LifeNode, LifeOperation, LifeImplementation, LifeModelCarrier, LifeRecord>& modelRunner);
-void PrintLifeScan(ModelRunner<LifeNode, LifeOperation, LifeImplementation, LifeModelCarrier, LifeRecord>& modelRunner);
+char PrintAndListenForQuit(ModelRunner<LifeNode, LifeOperation, LifeImplementation, LifeModelCarrier, LifeRecord>& modelRunner, LifeModelCarrier& carrier);
+void PrintLifeScan(ModelRunner<LifeNode, LifeOperation, LifeImplementation, LifeModelCarrier, LifeRecord>& modelRunner, LifeModelCarrier& carrier);
 void ParseArguments(int argc, char* argv[]);
 
 ///////////////////////////////////////////////////////////////////////////
@@ -61,8 +61,8 @@ int main(int argc, char* argv[])
 {
     ParseArguments(argc, argv);
     vector<LifeNode> model;
+    ModelRunner<LifeNode, LifeOperation, LifeImplementation, LifeModelCarrier, LifeRecord> modelRunner(argc, argv);
     LifeModelCarrier carrier { .Model = model };
-    ModelRunner<LifeNode, LifeOperation, LifeImplementation, LifeModelCarrier, LifeRecord> modelRunner(argc, argv, carrier);
 
     auto& configuration = modelRunner.Configuration();
     auto dimensionElement = configuration["Model"]["Dimensions"];
@@ -75,19 +75,19 @@ int main(int argc, char* argv[])
     centerWidth = width / 2;
     centerHeight = height / 2;
 
-    if (!modelRunner.Run())
+    if (!modelRunner.Run(carrier))
     {
         cout << "Cannot run model, stopping\n";
         return 1;
     }
 
-    PrintAndListenForQuit(modelRunner);
+    PrintAndListenForQuit(modelRunner, carrier);
 
     modelRunner.WaitForQuit();
     return 0;
 }
 
-char PrintAndListenForQuit(ModelRunner<LifeNode, LifeOperation, LifeImplementation, LifeModelCarrier, LifeRecord>& modelRunner)
+char PrintAndListenForQuit(ModelRunner<LifeNode, LifeOperation, LifeImplementation, LifeModelCarrier, LifeRecord>& modelRunner, LifeModelCarrier& carrier)
 {
     constexpr char KEY_UP = 'A';
     constexpr char KEY_DOWN = 'B';
@@ -101,7 +101,7 @@ char PrintAndListenForQuit(ModelRunner<LifeNode, LifeOperation, LifeImplementati
         bool quit {false};
         while (!quit)
         {
-            if (displayOn) PrintLifeScan(modelRunner);
+            if (displayOn) PrintLifeScan(modelRunner, carrier);
             auto gotChar = listener.Listen(50'000, c);
             if (gotChar)
             {
@@ -156,14 +156,14 @@ char PrintAndListenForQuit(ModelRunner<LifeNode, LifeOperation, LifeImplementati
     return c;
 }
 
-void PrintLifeScan(ModelRunner<LifeNode, LifeOperation, LifeImplementation, LifeModelCarrier, LifeRecord>& modelRunner)
+void PrintLifeScan(ModelRunner<LifeNode, LifeOperation, LifeImplementation, LifeModelCarrier, LifeRecord>& modelRunner, LifeModelCarrier& carrier)
 {
     constexpr int windowWidth = 100;
     constexpr int windowHeight = 30;
 
     cout << cls;
 
-    auto node = begin(modelRunner.GetModel().Model);
+    auto node = begin(carrier.Model);
     std::advance(node, ((width * (centerHeight - (windowHeight / 2))) + centerWidth - (windowWidth / 2)));
     for (auto high = windowHeight; high; --high)
     {
@@ -175,7 +175,7 @@ void PrintLifeScan(ModelRunner<LifeNode, LifeOperation, LifeImplementation, Life
         cout << '\n';
 
         std::advance(node, width - windowWidth);
-        if (node >= end(modelRunner.GetModel().Model)) node = begin(modelRunner.GetModel().Model);
+        if (node >= end(carrier.Model)) node = begin(carrier.Model);
     }
 
     cout

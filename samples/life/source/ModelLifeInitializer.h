@@ -3,8 +3,7 @@
 #include <vector>
 #include <chrono>
 
-#include "nlohmann/json.hpp"
-
+#include "ModelEngineCommon.h"
 #include "ModelEngine.h"
 #include "sdk/ModelInitializer.h"
 
@@ -22,18 +21,22 @@ namespace embeddedpenguins::life::infrastructure
     using std::chrono::hours;
     using std::chrono::duration_cast;
 
-    using nlohmann::json;
-
+    using embeddedpenguins::modelengine::ConfigurationUtilities;
     using embeddedpenguins::modelengine::ModelEngine;
     using embeddedpenguins::modelengine::sdk::ModelInitializer;
 
-    class ModelLifeInitializer : public ModelInitializer<LifeNode, LifeOperation, LifeSupport, LifeRecord>
+    class ModelLifeInitializer : public ModelInitializer<LifeOperation, LifeSupport, LifeRecord>
     {
-        vector<unsigned long long int> initializedCells_ { };
-
     public:
-        ModelLifeInitializer(LifeModelCarrier carrier, json& configuration);
-        virtual void Initialize() override;
-        virtual void InjectSignal(ProcessCallback<LifeOperation, LifeRecord>& callback) override;
+        ModelLifeInitializer(ConfigurationUtilities& configuration, LifeSupport helper) :
+            ModelInitializer<LifeOperation, LifeSupport, LifeRecord>(configuration, helper)
+        {
+
+        }
+
+        virtual void Initialize() override
+        {
+            helper_.InitializeModel();
+        }
     };
 }

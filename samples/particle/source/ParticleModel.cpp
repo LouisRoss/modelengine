@@ -53,8 +53,8 @@ unsigned long int height { 100 };
 unsigned long int centerWidth {};
 unsigned long int centerHeight {};
 
-char PrintAndListenForQuit(ModelRunner<ParticleNode, ParticleOperation, ParticleImplementation, ParticleModelCarrier, ParticleRecord>& modelRunner);
-void PrintLifeScan(ModelRunner<ParticleNode, ParticleOperation, ParticleImplementation, ParticleModelCarrier, ParticleRecord>& modelRunner);
+char PrintAndListenForQuit(ModelRunner<ParticleNode, ParticleOperation, ParticleImplementation, ParticleModelCarrier, ParticleRecord>& modelRunner, ParticleModelCarrier& carrier);
+void PrintLifeScan(ModelRunner<ParticleNode, ParticleOperation, ParticleImplementation, ParticleModelCarrier, ParticleRecord>& modelRunner, ParticleModelCarrier& carrier);
 void ParseArguments(int argc, char* argv[]);
 
 ///////////////////////////////////////////////////////////////////////////
@@ -65,8 +65,8 @@ int main(int argc, char* argv[])
 {
     ParseArguments(argc, argv);
     vector<ParticleNode> model;
+    ModelRunner<ParticleNode, ParticleOperation, ParticleImplementation, ParticleModelCarrier, ParticleRecord> modelRunner(argc, argv);
     ParticleModelCarrier carrier { .Model = model };
-    ModelRunner<ParticleNode, ParticleOperation, ParticleImplementation, ParticleModelCarrier, ParticleRecord> modelRunner(argc, argv, carrier);
 
     auto& configuration = modelRunner.Configuration();
     auto dimensionElement = configuration["Model"]["Dimensions"];
@@ -79,19 +79,19 @@ int main(int argc, char* argv[])
     centerWidth = width / 2;
     centerHeight = height / 2;
 
-    if (!modelRunner.Run())
+    if (!modelRunner.Run(carrier))
     {
         cout << "Cannot run model, stopping\n";
         return 1;
     }
 
-    PrintAndListenForQuit(modelRunner);
+    PrintAndListenForQuit(modelRunner, carrier);
 
     modelRunner.WaitForQuit();
     return 0;
 }
 
-char PrintAndListenForQuit(ModelRunner<ParticleNode, ParticleOperation, ParticleImplementation, ParticleModelCarrier, ParticleRecord>& modelRunner)
+char PrintAndListenForQuit(ModelRunner<ParticleNode, ParticleOperation, ParticleImplementation, ParticleModelCarrier, ParticleRecord>& modelRunner, ParticleModelCarrier& carrier)
 {
     constexpr char KEY_UP = 'A';
     constexpr char KEY_DOWN = 'B';
@@ -105,7 +105,7 @@ char PrintAndListenForQuit(ModelRunner<ParticleNode, ParticleOperation, Particle
         bool quit {false};
         while (!quit)
         {
-            if (displayOn) PrintLifeScan(modelRunner);
+            if (displayOn) PrintLifeScan(modelRunner, carrier);
             auto gotChar = listener.Listen(50'000, c);
             if (gotChar)
             {
@@ -160,17 +160,17 @@ char PrintAndListenForQuit(ModelRunner<ParticleNode, ParticleOperation, Particle
     return c;
 }
 
-void PrintLifeScan(ModelRunner<ParticleNode, ParticleOperation, ParticleImplementation, ParticleModelCarrier, ParticleRecord>& modelRunner)
+void PrintLifeScan(ModelRunner<ParticleNode, ParticleOperation, ParticleImplementation, ParticleModelCarrier, ParticleRecord>& modelRunner, ParticleModelCarrier& carrier)
 {
     constexpr int windowWidth = 100;
     constexpr int windowHeight = 30;
 
-    auto occupancy = std::count_if(modelRunner.GetModel().Model.begin(), modelRunner.GetModel().Model.end(), 
+    auto occupancy = std::count_if(carrier.Model.begin(), carrier.Model.end(), 
         [](const ParticleNode& node){ return node.Occupied; });
 
     cout << cls;
 
-    auto node = begin(modelRunner.GetModel().Model);
+    auto node = begin(carrier.Model);
     if (centerHeight < windowHeight / 2) centerHeight = windowHeight / 2;
     if (centerHeight >= height - (windowHeight / 2)) centerHeight = height - (windowHeight / 2) - 1;
     if (centerWidth < windowWidth / 2) centerWidth = windowWidth / 2;
@@ -199,7 +199,7 @@ void PrintLifeScan(ModelRunner<ParticleNode, ParticleOperation, ParticleImplemen
         cout << '\n';
 
         std::advance(node, width - windowWidth);
-        if (node >= end(modelRunner.GetModel().Model)) node = begin(modelRunner.GetModel().Model);
+        if (node >= end(carrier.Model)) node = begin(carrier.Model);
     }
 
     cout

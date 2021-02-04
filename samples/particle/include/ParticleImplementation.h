@@ -7,8 +7,6 @@
 #include <algorithm>
 #include <cmath>
 
-#include "nlohmann/json.hpp"
-
 #include "WorkerThread.h"
 #include "WorkItem.h"
 #include "ProcessCallback.h"
@@ -33,26 +31,27 @@ namespace embeddedpenguins::particle::infrastructure
     using std::tuple;
     using std::abs;
 
-    using nlohmann::json;
-
+    using embeddedpenguins::modelengine::ConfigurationUtilities;
     using ::embeddedpenguins::modelengine::threads::WorkerThread;
-    using ::embeddedpenguins::modelengine::WorkItem;
     using ::embeddedpenguins::modelengine::threads::ProcessCallback;
-    using ::embeddedpenguins::modelengine::Recorder;
     using ::embeddedpenguins::modelengine::Log;
+    using ::embeddedpenguins::modelengine::Recorder;
+    using ::embeddedpenguins::modelengine::WorkItem;
 
     //
     //
     class ParticleImplementation : public WorkerThread<ParticleOperation, ParticleImplementation, ParticleRecord>
     {
         int workerId_;
-        ParticleModelCarrier carrier_;
-        const json& configuration_;
+        ParticleModelCarrier& carrier_;
+        const ConfigurationUtilities& configuration_;
 
         unsigned long int width_ { 100 };
         unsigned long int height_ { 100 };
         unsigned long long int maxIndex_ { };
         
+        bool firstTime_ { true };
+
     public:
         //
         // Recommended to not allow a default constructor.
@@ -65,13 +64,13 @@ namespace embeddedpenguins::particle::infrastructure
         // Allow the template library to pass in the model and configuration
         // to each worker thread that is created.
         //
-        ParticleImplementation(int workerId, ParticleModelCarrier carrier, const json& configuration) :
+        ParticleImplementation(int workerId, ParticleModelCarrier& carrier, const ConfigurationUtilities& configuration) :
             workerId_(workerId),
             carrier_(carrier),
             configuration_(configuration)
         {
             // Override the dimension defaults if configured.
-            auto dimensionElement = configuration_["Model"]["Dimensions"];
+            auto dimensionElement = configuration_.Configuration()["Model"]["Dimensions"];
             if (dimensionElement.is_array())
             {
                 auto dimensionArray = dimensionElement.get<vector<int>>();
@@ -83,15 +82,23 @@ namespace embeddedpenguins::particle::infrastructure
         }
 
         //
-        // Required Initialize method.  
+        // Required StreamNewInputWork method.  
         // One instance of this class on one thread will be called
-        // here to initialize the model.
-        // Do not use this method to initialize instances of this class.
+        // here each tick to provide new input from external to the model.
+        // It is up to the implementation to connect to the external source.
         //
-        void Initialize(Log& log, Recorder<ParticleRecord>& record, 
+        void StreamNewInputWork(Log& log, Recorder<ParticleRecord>& record, 
             unsigned long long int tickNow, 
             ProcessCallback<ParticleOperation, ParticleRecord>& callback)
         {
+            if (firstTime_)
+            {
+                ParticleSupport helper(carrier_, configuration_);
+                InitializeParticles(helper);
+                helper.SignalInitialCells(callback);
+            }
+
+            firstTime_ = false;
         }
 
         //
@@ -114,18 +121,43 @@ namespace embeddedpenguins::particle::infrastructure
             }
         }
 
-        //
-        // Required Finalize method.
-        // One instance of this class on one thread will be called
-        // here to clean up the model.
-        // Do not use this method as a destructor for instances of this class.
-        // Destructors are allowed -- use one instead.
-        //
-        void Finalize(Log& log, Recorder<ParticleRecord>& record, unsigned long long int tickNow)
+    private:
+        void InitializeParticles(ParticleSupport& helper)
         {
+            auto centerCell = (helper.Width() * helper.Height() / 2) + (helper.Width() / 2);
+
+            int verticalVector = -3;
+            int horizontalVector = -3;
+            int mass = 5;
+            int speed = 0;
+            ParticleType type = ParticleType::Neutron;
+
+            for (auto row = 0; row < helper.Height(); row += 8)
+            {
+                for (auto column = 0; column < helper.Width(); column += 8)
+                {
+                    ostringstream nameStream;
+                    nameStream << "P(" << std::setw(3) << std::setfill('0') << row << ',' << std::setw(3) << std::setfill('0') << column << ')';
+                    helper.InitializeCell(nameStream.str(), row, column, verticalVector, horizontalVector, mass, speed, type);
+
+                    verticalVector++;
+                    if (verticalVector > 3)
+                    {
+                        verticalVector = -3;
+                        horizontalVector++;
+                        if (horizontalVector > 3) horizontalVector = -3;
+                    }
+                    if (verticalVector == 0 && horizontalVector == 0) verticalVector++;
+                    speed++;
+                    if (speed > 9) speed = 0;
+
+                    auto nextType = (int)type + 1;
+                    if (nextType > (int)ParticleType::Photon) nextType = 0;
+                    type = (ParticleType)nextType;
+                }
+            }
         }
 
-    private:
         void ProcessWorkItem(Log& log, Recorder<ParticleRecord>& record, 
             unsigned long long int tickNow, 
             const ParticleOperation& work, 

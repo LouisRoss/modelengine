@@ -5,8 +5,7 @@
 #include <chrono>
 #include <iostream>
 
-#include "nlohmann/json.hpp"
-
+#include "ModelEngineCommon.h"
 #include "WorkerThread.h"
 #include "WorkItem.h"
 #include "ProcessCallback.h"
@@ -25,8 +24,7 @@ namespace test::embeddedpenguins::modelengine::infrastructure
     using std::chrono::milliseconds;
     using time_point = std::chrono::high_resolution_clock::time_point;
 
-    using nlohmann::json;
-
+    using ::embeddedpenguins::modelengine::ConfigurationUtilities;
     using ::embeddedpenguins::modelengine::threads::WorkerThread;
     using ::embeddedpenguins::modelengine::threads::ProcessCallback;
     using ::embeddedpenguins::modelengine::Log;
@@ -44,7 +42,8 @@ namespace test::embeddedpenguins::modelengine::infrastructure
     {
         int workerId_;
         TestModelCarrier carrier_;
-        const json& configuration_;
+        const ConfigurationUtilities& configuration_;
+        bool firstRun_ { true };
 
     public:
         TestImplementation() = delete;
@@ -52,7 +51,7 @@ namespace test::embeddedpenguins::modelengine::infrastructure
         // Required constructor.
         // Allow the template library to pass in the model
         // for each worker thread that is created.
-        TestImplementation(int workerId, TestModelCarrier carrier, const json& configuration) :
+        TestImplementation(int workerId, TestModelCarrier carrier, const ConfigurationUtilities& configuration) :
             workerId_(workerId),
             carrier_(carrier),
             configuration_(configuration)
@@ -60,13 +59,18 @@ namespace test::embeddedpenguins::modelengine::infrastructure
             
         }
 
-        void Initialize(Log& log, Recorder<TestRecord>& record, 
+        void StreamNewInputWork(Log& log, Recorder<TestRecord>& record, 
                         unsigned long long int tickNow, 
                         ProcessCallback<TestOperation, TestRecord>& callback)
         {
-            callback(TestOperation(1));
-            log.Logger() << "Creating initial work for index " << 1 << " with tick " << tickNow + 1 << '\n';
-            log.Logit();
+            if (firstRun_)
+            {
+                callback(TestOperation(1));
+                log.Logger() << "Creating initial work for index " << 1 << " with tick " << tickNow + 1 << '\n';
+                log.Logit();
+            }
+
+            firstRun_ = false;
         }
 
         void Process(Log& log, Recorder<TestRecord>& record, 
@@ -96,10 +100,6 @@ namespace test::embeddedpenguins::modelengine::infrastructure
             callback(TestOperation(4999));
             log.Logger() << "Creating work for index " << 4999 << " with tick " << tickNow + 1 << '\n';
             log.Logit();
-        }
-
-        void Finalize(Log& log, Recorder<TestRecord>& record, int64_t milliseconds_since_epoch)
-        {
         }
     };
 }
