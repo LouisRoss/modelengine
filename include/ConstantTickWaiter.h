@@ -17,15 +17,15 @@ namespace embeddedpenguins::modelengine
     // a tick time, this waiter will schedule the next run in a attempt to 
     // catch up.
     //
-    template<class NODETYPE, class OPERATORTYPE, class IMPLEMENTATIONTYPE, class MODELCARRIERTYPE, class RECORDTYPE>
+    template<class OPERATORTYPE, class IMPLEMENTATIONTYPE, class MODELCARRIERTYPE, class RECORDTYPE>
     class ConstantTickWaiter : public IModelEngineWaiter
     {
-        ModelEngineContext<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>& context_;
-        ModelEngineContextOp<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE> contextOp_;
+        ModelEngineContext<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>& context_;
+        ModelEngineContextOp<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE> contextOp_;
         time_point nextScheduledTick_;
 
     public:
-        ConstantTickWaiter(ModelEngineContext<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>& context) :
+        ConstantTickWaiter(ModelEngineContext<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>& context) :
             context_(context),
             contextOp_(context),
             nextScheduledTick_(high_resolution_clock::now() + context_.EnginePeriod)

@@ -49,8 +49,8 @@ unsigned long int height { 100 };
 unsigned long int centerWidth {};
 unsigned long int centerHeight {};
 
-char PrintAndListenForQuit(ModelRunner<LifeNode, LifeOperation, LifeImplementation, LifeModelCarrier, LifeRecord>& modelRunner, LifeModelCarrier& carrier);
-void PrintLifeScan(ModelRunner<LifeNode, LifeOperation, LifeImplementation, LifeModelCarrier, LifeRecord>& modelRunner, LifeModelCarrier& carrier);
+char PrintAndListenForQuit(ModelRunner<LifeOperation, LifeImplementation, LifeModelCarrier, LifeRecord>& modelRunner, LifeModelCarrier& carrier);
+void PrintLifeScan(ModelRunner<LifeOperation, LifeImplementation, LifeModelCarrier, LifeRecord>& modelRunner, LifeModelCarrier& carrier);
 void ParseArguments(int argc, char* argv[]);
 
 ///////////////////////////////////////////////////////////////////////////
@@ -61,7 +61,7 @@ int main(int argc, char* argv[])
 {
     ParseArguments(argc, argv);
     vector<LifeNode> model;
-    ModelRunner<LifeNode, LifeOperation, LifeImplementation, LifeModelCarrier, LifeRecord> modelRunner(argc, argv);
+    ModelRunner<LifeOperation, LifeImplementation, LifeModelCarrier, LifeRecord> modelRunner(argc, argv);
     LifeModelCarrier carrier { .Model = model };
 
     auto& configuration = modelRunner.Configuration();
@@ -87,7 +87,7 @@ int main(int argc, char* argv[])
     return 0;
 }
 
-char PrintAndListenForQuit(ModelRunner<LifeNode, LifeOperation, LifeImplementation, LifeModelCarrier, LifeRecord>& modelRunner, LifeModelCarrier& carrier)
+char PrintAndListenForQuit(ModelRunner<LifeOperation, LifeImplementation, LifeModelCarrier, LifeRecord>& modelRunner, LifeModelCarrier& carrier)
 {
     constexpr char KEY_UP = 'A';
     constexpr char KEY_DOWN = 'B';
@@ -156,7 +156,7 @@ char PrintAndListenForQuit(ModelRunner<LifeNode, LifeOperation, LifeImplementati
     return c;
 }
 
-void PrintLifeScan(ModelRunner<LifeNode, LifeOperation, LifeImplementation, LifeModelCarrier, LifeRecord>& modelRunner, LifeModelCarrier& carrier)
+void PrintLifeScan(ModelRunner<LifeOperation, LifeImplementation, LifeModelCarrier, LifeRecord>& modelRunner, LifeModelCarrier& carrier)
 {
     constexpr int windowWidth = 100;
     constexpr int windowHeight = 30;

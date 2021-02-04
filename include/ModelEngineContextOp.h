@@ -19,13 +19,13 @@ namespace embeddedpenguins::modelengine
     // Separate the executable code from the context carrier object so that the
     // context carrier object may be passed around without exposing methods.
     // 
-    template<class NODETYPE, class OPERATORTYPE, class IMPLEMENTATIONTYPE, class MODELCARRIERTYPE, class RECORDTYPE>
+    template<class OPERATORTYPE, class IMPLEMENTATIONTYPE, class MODELCARRIERTYPE, class RECORDTYPE>
     class ModelEngineContextOp
     {
-        ModelEngineContext<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>& context_;
+        ModelEngineContext<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>& context_;
 
     public:
-        ModelEngineContextOp(ModelEngineContext<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>& context) :
+        ModelEngineContextOp(ModelEngineContext<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>& context) :
             context_(context)
         {
 
@@ -38,7 +38,7 @@ namespace embeddedpenguins::modelengine
             for (auto id = 1; id < context_.WorkerCount; id++, segmentStart += segmentSize)
             {
                 context_.Workers.push_back(
-                    make_unique<Worker<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>>(
+                    make_unique<Worker<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>>(
                         carrier, 
                         id, 
                         context_.EnginePeriod, 
@@ -49,7 +49,7 @@ namespace embeddedpenguins::modelengine
                         context_.LoggingLevel));
             }
             context_.Workers.push_back(
-                make_unique<Worker<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>>(
+                make_unique<Worker<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>>(
                     carrier, 
                     context_.WorkerCount, 
                     context_.EnginePeriod, 

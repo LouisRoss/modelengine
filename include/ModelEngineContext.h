@@ -31,7 +31,7 @@ namespace embeddedpenguins::modelengine
     // This includes synchronization between the model engine and its thread;
     // configuration and logging; all workers; and statistics about the run.
     //
-    template<class NODETYPE, class OPERATORTYPE, class IMPLEMENTATIONTYPE, class MODELCARRIERTYPE, class RECORDTYPE>
+    template<class OPERATORTYPE, class IMPLEMENTATIONTYPE, class MODELCARRIERTYPE, class RECORDTYPE>
     struct ModelEngineContext
     {
         atomic<bool> Run { false };
@@ -46,7 +46,7 @@ namespace embeddedpenguins::modelengine
         string LogFile {"ModelEngine.log"};
         string RecordFile {"ModelEngineRecord.csv"};
 
-        vector<unique_ptr<Worker<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>>> Workers {};
+        vector<unique_ptr<Worker<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>>> Workers {};
         WorkerContext<OPERATORTYPE, RECORDTYPE> ExternalWorkSource { Iterations, EnginePeriod, LoggingLevel };
         int WorkerCount { 0 };
         microseconds EnginePeriod;

@@ -26,7 +26,7 @@ namespace embeddedpenguins::modelengine::sdk
     // the IModelInitializer<> interface, plus two C-style methods to create and destroy
     // instances of its class on the heap.
     //
-    template<class NODETYPE, class OPERATORTYPE, class MODELCARRIERTYPE, class RECORDTYPE>
+    template<class OPERATORTYPE, class MODELCARRIERTYPE, class RECORDTYPE>
     class ModelInitializerProxy : IModelInitializer<OPERATORTYPE, RECORDTYPE>
     {
         using InitializerCreator = IModelInitializer<OPERATORTYPE, RECORDTYPE>* (*)(MODELCARRIERTYPE&, ConfigurationUtilities&);

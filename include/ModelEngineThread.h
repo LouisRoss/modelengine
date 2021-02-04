@@ -43,14 +43,14 @@ namespace embeddedpenguins::modelengine
     // The two phases do not run simultaneously, but use synchronization barriers
     // to ensure the phases run serially.
     //
-    template<class NODETYPE, class OPERATORTYPE, class IMPLEMENTATIONTYPE, class MODELCARRIERTYPE, class RECORDTYPE>
+    template<class OPERATORTYPE, class IMPLEMENTATIONTYPE, class MODELCARRIERTYPE, class RECORDTYPE>
     class ModelEngineThread
     {
         unique_ptr<IModelEngineWaiter> waiter_ { };
         unique_ptr<IModelEnginePartitioner> partitioner_ { };
 
-        ModelEngineContext<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>& context_;
-        ModelEngineContextOp<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE> contextOp_;
+        ModelEngineContext<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>& context_;
+        ModelEngineContextOp<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE> contextOp_;
         MODELCARRIERTYPE& carrier_;
         IMPLEMENTATIONTYPE WorkSource_;
         ProcessCallback<OPERATORTYPE, RECORDTYPE> callback_;
@@ -58,7 +58,7 @@ namespace embeddedpenguins::modelengine
     public:
         ModelEngineThread() = delete;
         ModelEngineThread(
-                        ModelEngineContext<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>& context, 
+                        ModelEngineContext<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>& context, 
                         MODELCARRIERTYPE& carrier, 
                         unique_ptr<IModelEnginePartitioner>& partitioner, 
                         unique_ptr<IModelEngineWaiter>& waiter) :

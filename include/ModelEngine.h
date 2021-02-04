@@ -27,11 +27,11 @@ namespace embeddedpenguins::modelengine
     // so that between the model engine thread and the worker thread, all cores
     // will be kept busy.
     //
-    template<class NODETYPE, class OPERATORTYPE, class IMPLEMENTATIONTYPE, class MODELCARRIERTYPE, class RECORDTYPE>
+    template<class OPERATORTYPE, class IMPLEMENTATIONTYPE, class MODELCARRIERTYPE, class RECORDTYPE>
     class ModelEngine
     {
-        ModelEngineContext<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE> context_;
-        ModelEngineContextOp<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE> contextOp_;
+        ModelEngineContext<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE> context_;
+        ModelEngineContextOp<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE> contextOp_;
         thread workerThread_;
         PartitionPolicy partitionPolicy_ { PartitionPolicy::AdaptiveWidth };
         nanoseconds duration_ {};
@@ -102,19 +102,19 @@ namespace embeddedpenguins::modelengine
             switch (partitionPolicy_)
             {
             case PartitionPolicy::ConstantWidth:
-                partitioner = make_unique<ConstantWidthPartitioner<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>>(context_);
+                partitioner = make_unique<ConstantWidthPartitioner<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>>(context_);
                 break;
             
             case PartitionPolicy::AdaptiveWidth:
-                partitioner = make_unique<AdaptiveWidthPartitioner<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>>(context_);
+                partitioner = make_unique<AdaptiveWidthPartitioner<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>>(context_);
                 break;
             
             default:
                 break;
             }
 
-            unique_ptr<IModelEngineWaiter> waiter = make_unique<ConstantTickWaiter<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>>(context_);
-            workerThread_ = thread(ModelEngineThread<NODETYPE, OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>(context_, carrier, partitioner, waiter));
+            unique_ptr<IModelEngineWaiter> waiter = make_unique<ConstantTickWaiter<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>>(context_);
+            workerThread_ = thread(ModelEngineThread<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>(context_, carrier, partitioner, waiter));
         }
     };
 }
