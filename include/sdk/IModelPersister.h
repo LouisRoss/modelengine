@@ -3,25 +3,25 @@
 #include <string>
 #include <vector>
 
-#include "ModelEngineCommon.h"
+#include "ConfigurationRepository.h"
 
 namespace embeddedpenguins::neuron::infrastructure::persistence
 {
     using std::string;
     using std::vector;
 
-    using embeddedpenguins::modelengine::ConfigurationUtilities;
+    using embeddedpenguins::core::neuron::model::ConfigurationRepository;
 
     //
     // TODO: Use this interface for persistence of the current state of a model.
     //
-    template<class MODELCARRIERTYPE>
+    template<class MODELHELPERTYPE>
     class IModelPersister
     {
     public:
         virtual ~IModelPersister() = default;
 
         virtual bool LoadConfiguration() = 0;
-        virtual bool ReadModel(MODELCARRIERTYPE& carrier, ConfigurationUtilities& configuration) = 0;
+        virtual bool ReadModel(MODELHELPERTYPE& helper, ConfigurationRepository& configuration) = 0;
     };
 }

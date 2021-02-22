@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <math.h>
 
-#include "ModelEngineCommon.h"
+#include "ConfigurationRepository.h"
 #include "WorkerThread.h"
 #include "WorkItem.h"
 #include "ProcessCallback.h"
@@ -25,11 +25,11 @@ namespace embeddedpenguins::life::infrastructure
     using std::vector;
     using std::unique;
 
-    using embeddedpenguins::modelengine::ConfigurationUtilities;
+    using embeddedpenguins::core::neuron::model::ConfigurationRepository;
     using ::embeddedpenguins::modelengine::threads::WorkerThread;
     using ::embeddedpenguins::modelengine::threads::ProcessCallback;
-    using ::embeddedpenguins::modelengine::Log;
-    using ::embeddedpenguins::modelengine::Recorder;
+    using embeddedpenguins::core::neuron::model::Log;
+    using embeddedpenguins::core::neuron::model::Recorder;
     using ::embeddedpenguins::modelengine::WorkItem;
 
     //
@@ -47,8 +47,8 @@ namespace embeddedpenguins::life::infrastructure
     class LifeImplementation : public WorkerThread<LifeOperation, LifeImplementation, LifeRecord>
     {
         int workerId_;
-        LifeModelCarrier& carrier_;
-        const ConfigurationUtilities& configuration_;
+        LifeSupport& helper_;
+        const ConfigurationRepository& configuration_;
 
         unsigned long int width_ { 100 };
         unsigned long int height_ { 100 };
@@ -76,9 +76,9 @@ namespace embeddedpenguins::life::infrastructure
         // Allow the template library to pass in the model and configuration
         // to each worker thread that is created.
         //
-        LifeImplementation(int workerId, LifeModelCarrier& carrier, const ConfigurationUtilities& configuration) :
+        LifeImplementation(int workerId, LifeSupport& helper, const ConfigurationRepository& configuration) :
             workerId_(workerId),
-            carrier_(carrier),
+            helper_(helper),
             configuration_(configuration)
         {
             // Override the dimension defaults if configured.
@@ -106,9 +106,8 @@ namespace embeddedpenguins::life::infrastructure
         {
             if (firstTime_)
             {
-                LifeSupport helper(carrier_, configuration_);
-                InitializeLife(helper);
-                helper.SignalInitialCells(initializedCells_, callback);
+                InitializeLife(helper_);
+                helper_.SignalInitialCells(initializedCells_, callback);
             }
 
             firstTime_ = false;
@@ -193,7 +192,7 @@ namespace embeddedpenguins::life::infrastructure
             ProcessCallback<LifeOperation, LifeRecord>& callback)
         {
             auto aliveNextTick = ApplyRulesOfLife(cellIndex);
-            auto& lifeNode = carrier_.Model[cellIndex];
+            auto& lifeNode = helper_.Model().Model[cellIndex];
 
             if (lifeNode.Alive != aliveNextTick)
             {
@@ -217,7 +216,7 @@ namespace embeddedpenguins::life::infrastructure
             unsigned long long int cellIndex, 
             ProcessCallback<LifeOperation, LifeRecord>& callback)
         {
-            auto& lifeNode = carrier_.Model[cellIndex];
+            auto& lifeNode = helper_.Model().Model[cellIndex];
  
 #ifndef NOLOG
             log.Logger() << "Cell " << cellIndex << " propagating to " << (lifeNode.AliveNextTick ? "alive" : "dead") << '\n';
@@ -263,7 +262,7 @@ namespace embeddedpenguins::life::infrastructure
             {
                 for (auto step = rowStep - 1; step < rowStep + 2; step++)
                 {
-                    if (step < maxIndex_ && carrier_.Model[step].Alive) surround |= bitmask;
+                    if (step < maxIndex_ && helper_.Model().Model[step].Alive) surround |= bitmask;
                     bitmask <<= 1;
                 }
             }

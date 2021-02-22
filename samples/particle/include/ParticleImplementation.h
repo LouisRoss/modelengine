@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cmath>
 
+#include "ConfigurationRepository.h"
 #include "WorkerThread.h"
 #include "WorkItem.h"
 #include "ProcessCallback.h"
@@ -31,11 +32,11 @@ namespace embeddedpenguins::particle::infrastructure
     using std::tuple;
     using std::abs;
 
-    using embeddedpenguins::modelengine::ConfigurationUtilities;
+    using embeddedpenguins::core::neuron::model::ConfigurationRepository;
     using ::embeddedpenguins::modelengine::threads::WorkerThread;
     using ::embeddedpenguins::modelengine::threads::ProcessCallback;
-    using ::embeddedpenguins::modelengine::Log;
-    using ::embeddedpenguins::modelengine::Recorder;
+    using embeddedpenguins::core::neuron::model::Log;
+    using embeddedpenguins::core::neuron::model::Recorder;
     using ::embeddedpenguins::modelengine::WorkItem;
 
     //
@@ -43,8 +44,8 @@ namespace embeddedpenguins::particle::infrastructure
     class ParticleImplementation : public WorkerThread<ParticleOperation, ParticleImplementation, ParticleRecord>
     {
         int workerId_;
-        ParticleModelCarrier& carrier_;
-        const ConfigurationUtilities& configuration_;
+        ParticleSupport& helper_;
+        const ConfigurationRepository& configuration_;
 
         unsigned long int width_ { 100 };
         unsigned long int height_ { 100 };
@@ -64,9 +65,9 @@ namespace embeddedpenguins::particle::infrastructure
         // Allow the template library to pass in the model and configuration
         // to each worker thread that is created.
         //
-        ParticleImplementation(int workerId, ParticleModelCarrier& carrier, const ConfigurationUtilities& configuration) :
+        ParticleImplementation(int workerId, ParticleSupport& helper, const ConfigurationRepository& configuration) :
             workerId_(workerId),
-            carrier_(carrier),
+            helper_(helper),
             configuration_(configuration)
         {
             // Override the dimension defaults if configured.
@@ -93,9 +94,8 @@ namespace embeddedpenguins::particle::infrastructure
         {
             if (firstTime_)
             {
-                ParticleSupport helper(carrier_, configuration_);
-                InitializeParticles(helper);
-                helper.SignalInitialCells(callback);
+                InitializeParticles(helper_);
+                helper_.SignalInitialCells(callback);
             }
 
             firstTime_ = false;
@@ -190,7 +190,7 @@ namespace embeddedpenguins::particle::infrastructure
             unsigned long long int index, 
             ProcessCallback<ParticleOperation, ParticleRecord>& callback)
         {
-            auto& particleNode = carrier_.Model[index];
+            auto& particleNode = helper_.Model().Model[index];
 
             auto [nextIndex, nextVerticalVector, nextHorizontalVector] = NewPositionAndVelocity(log, record, index, particleNode.VerticalVector, particleNode.HorizontalVector, particleNode.Gradient, callback);
 
@@ -222,7 +222,7 @@ namespace embeddedpenguins::particle::infrastructure
             ParticleType type,
             ProcessCallback<ParticleOperation, ParticleRecord>& callback)
         {
-            auto& particleNode = carrier_.Model[index];
+            auto& particleNode = helper_.Model().Model[index];
 
             if (particleNode.Occupied)
             {

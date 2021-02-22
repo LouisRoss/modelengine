@@ -4,6 +4,7 @@ CC=g++
 CFLAGS=-I$(IDIR) -I$(ILDIR) -pthread -fpic -std=c++17
 LFLAGS=-pthread -fpic -std=c++17
 LOG=-DNOLOG
+DEBUGFLAG=
 
 ODIR=obj
 BDIR=../bin
@@ -22,7 +23,7 @@ _LOCALDEPS = KeyListener.h
 LOCALDEPS = $(patsubst %,./%,$(_LOCALDEPS))
 
 $(ODIR)/%.o: %.cpp $(DEPS) $(LIFEDEPS) $(LOCALDEPS)
-	$(CC) -c -o $@ $< $(CFLAGS) $(LOG)
+	$(CC) -c -o $@ $< $(DEBUGFLAG) $(CFLAGS) $(LOG)
 
 all: $(BDIR)/ModelLifeInitializer.so $(BDIR)/LifeModel
 .PHONY: all
@@ -33,12 +34,15 @@ log:
 .PHONY: log
 
 $(BDIR)/ModelLifeInitializer.so: $(ODIR)/ModelLifeInitializer.o
-	$(CC) -shared -o $@ $^ $(LFLAGS) $(LIBS)
+	$(CC) -shared -o $@ $^ $(DEBUGFLAG) $(LFLAGS) $(LIBS)
 
 $(BDIR)/LifeModel: $(ODIR)/LifeModel.o
-	$(CC) -o $@ $^ $(LFLAGS) $(LIBS)
+	$(CC) -o $@ $^ $(DEBUGFLAG) $(LFLAGS) $(LIBS)
+
+debug:
+	make DEBUGFLAG="-g"
+.PHONY: debug
 
 .PHONY: clean
-
 clean:
 	rm -f $(ODIR)/*.o

@@ -3,17 +3,16 @@
         {
             "name": "Linux",
             "includePath": [
-                "${workspaceFolder}/../../**",
+                "/usr/include/c++/9",
                 "${workspaceFolder}/include/**",
-                "${workspaceFolder}",
-                "${workspaceFolder}/include"
+                "${workspaceFolder}/include",
+                "${workspaceFolder}/samples/life/include"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",
             "cStandard": "gnu17",
             "cppStandard": "c++17",
-            "intelliSenseMode": "gcc-x64",
-            "compileCommands": "/home/louis/source/spiking-model-stash/build/compile_commands.json"
+            "intelliSenseMode": "gcc-x64"
         }
     ],
     "version": 4

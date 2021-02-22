@@ -18,7 +18,7 @@ namespace embeddedpenguins::modelengine
     using time_point = std::chrono::high_resolution_clock::time_point;
 
     using embeddedpenguins::modelengine::threads::ProcessCallback;
-    using embeddedpenguins::modelengine::sdk::ModelInitializerProxy;
+    using embeddedpenguins::core::neuron::model::ModelInitializerProxy;
 
     //
     // The top-level control engine for running a model.
@@ -27,11 +27,11 @@ namespace embeddedpenguins::modelengine
     // so that between the model engine thread and the worker thread, all cores
     // will be kept busy.
     //
-    template<class OPERATORTYPE, class IMPLEMENTATIONTYPE, class MODELCARRIERTYPE, class RECORDTYPE>
+    template<class OPERATORTYPE, class IMPLEMENTATIONTYPE, class MODELHELPERTYPE, class RECORDTYPE>
     class ModelEngine
     {
-        ModelEngineContext<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE> context_;
-        ModelEngineContextOp<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE> contextOp_;
+        ModelEngineContext<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELHELPERTYPE, RECORDTYPE> context_;
+        ModelEngineContextOp<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELHELPERTYPE, RECORDTYPE> contextOp_;
         thread workerThread_;
         PartitionPolicy partitionPolicy_ { PartitionPolicy::AdaptiveWidth };
         nanoseconds duration_ {};
@@ -52,14 +52,11 @@ namespace embeddedpenguins::modelengine
     public:
         ModelEngine() = delete;
 
-        ModelEngine(MODELCARRIERTYPE& carrier, microseconds enginePeriod, const ConfigurationUtilities& configuration, int segmentCount = 0) :
+        ModelEngine(MODELHELPERTYPE& helper, const ConfigurationRepository& configuration) :
+            context_(configuration, helper),
             contextOp_(context_)
         {
-            context_.WorkerCount = segmentCount;
-            context_.EnginePeriod = enginePeriod;
-            context_.Configuration = configuration;
-
-            CreateWorkerThread(carrier);
+            CreateWorkerThread(helper);
         }
 
         ~ModelEngine()
@@ -75,8 +72,11 @@ namespace embeddedpenguins::modelengine
             startTime_ = high_resolution_clock::now();
             context_.Run = true;
 
-            while (!context_.EngineInitialized)
+            while (!context_.EngineInitialized && !context_.EngineInitializeFailed)
                 std::this_thread::yield();
+
+            if (context_.EngineInitializeFailed)
+                WaitForQuit();
         }
 
         void Quit()
@@ -96,25 +96,25 @@ namespace embeddedpenguins::modelengine
         }
 
     private:
-        void CreateWorkerThread(MODELCARRIERTYPE& carrier)
+        void CreateWorkerThread(MODELHELPERTYPE& helper)
         {
             unique_ptr<IModelEnginePartitioner> partitioner { };
             switch (partitionPolicy_)
             {
             case PartitionPolicy::ConstantWidth:
-                partitioner = make_unique<ConstantWidthPartitioner<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>>(context_);
+                partitioner = make_unique<ConstantWidthPartitioner<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELHELPERTYPE, RECORDTYPE>>(context_);
                 break;
             
             case PartitionPolicy::AdaptiveWidth:
-                partitioner = make_unique<AdaptiveWidthPartitioner<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>>(context_);
+                partitioner = make_unique<AdaptiveWidthPartitioner<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELHELPERTYPE, RECORDTYPE>>(context_);
                 break;
             
             default:
                 break;
             }
 
-            unique_ptr<IModelEngineWaiter> waiter = make_unique<ConstantTickWaiter<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>>(context_);
-            workerThread_ = thread(ModelEngineThread<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>(context_, carrier, partitioner, waiter));
+            unique_ptr<IModelEngineWaiter> waiter = make_unique<ConstantTickWaiter<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELHELPERTYPE, RECORDTYPE>>(context_);
+            workerThread_ = thread(ModelEngineThread<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELHELPERTYPE, RECORDTYPE>(context_, helper, partitioner, waiter));
         }
     };
 }

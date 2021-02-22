@@ -14,6 +14,7 @@
 #include "LifeNode.h"
 #include "LifeRecord.h"
 #include "LifeModelCarrier.h"
+#include "LifeSupport.h"
 
 #include "KeyListener.h"
 
@@ -39,6 +40,7 @@ using embeddedpenguins::life::infrastructure::LifeNode;
 using embeddedpenguins::life::infrastructure::LifeRecord;
 using embeddedpenguins::life::infrastructure::KeyListener;
 using embeddedpenguins::life::infrastructure::LifeModelCarrier;
+using embeddedpenguins::life::infrastructure::LifeSupport;
 
 //////////////////////////////////////////////////////////// CPU Code ////////////////////////////////////////////////////////////
 //
@@ -49,8 +51,8 @@ unsigned long int height { 100 };
 unsigned long int centerWidth {};
 unsigned long int centerHeight {};
 
-char PrintAndListenForQuit(ModelRunner<LifeOperation, LifeImplementation, LifeModelCarrier, LifeRecord>& modelRunner, LifeModelCarrier& carrier);
-void PrintLifeScan(ModelRunner<LifeOperation, LifeImplementation, LifeModelCarrier, LifeRecord>& modelRunner, LifeModelCarrier& carrier);
+char PrintAndListenForQuit(ModelRunner<LifeOperation, LifeImplementation, LifeSupport, LifeRecord>& modelRunner, LifeModelCarrier& carrier);
+void PrintLifeScan(ModelRunner<LifeOperation, LifeImplementation, LifeSupport, LifeRecord>& modelRunner, LifeModelCarrier& carrier);
 void ParseArguments(int argc, char* argv[]);
 
 ///////////////////////////////////////////////////////////////////////////
@@ -61,8 +63,9 @@ int main(int argc, char* argv[])
 {
     ParseArguments(argc, argv);
     vector<LifeNode> model;
-    ModelRunner<LifeOperation, LifeImplementation, LifeModelCarrier, LifeRecord> modelRunner(argc, argv);
+    ModelRunner<LifeOperation, LifeImplementation, LifeSupport, LifeRecord> modelRunner(argc, argv);
     LifeModelCarrier carrier { .Model = model };
+    LifeSupport helper(carrier, modelRunner.ConfigurationCarrier());
 
     auto& configuration = modelRunner.Configuration();
     auto dimensionElement = configuration["Model"]["Dimensions"];
@@ -75,7 +78,7 @@ int main(int argc, char* argv[])
     centerWidth = width / 2;
     centerHeight = height / 2;
 
-    if (!modelRunner.Run(carrier))
+    if (!modelRunner.Run(helper))
     {
         cout << "Cannot run model, stopping\n";
         return 1;
@@ -87,7 +90,7 @@ int main(int argc, char* argv[])
     return 0;
 }
 
-char PrintAndListenForQuit(ModelRunner<LifeOperation, LifeImplementation, LifeModelCarrier, LifeRecord>& modelRunner, LifeModelCarrier& carrier)
+char PrintAndListenForQuit(ModelRunner<LifeOperation, LifeImplementation, LifeSupport, LifeRecord>& modelRunner, LifeModelCarrier& carrier)
 {
     constexpr char KEY_UP = 'A';
     constexpr char KEY_DOWN = 'B';
@@ -156,7 +159,7 @@ char PrintAndListenForQuit(ModelRunner<LifeOperation, LifeImplementation, LifeMo
     return c;
 }
 
-void PrintLifeScan(ModelRunner<LifeOperation, LifeImplementation, LifeModelCarrier, LifeRecord>& modelRunner, LifeModelCarrier& carrier)
+void PrintLifeScan(ModelRunner<LifeOperation, LifeImplementation, LifeSupport, LifeRecord>& modelRunner, LifeModelCarrier& carrier)
 {
     constexpr int windowWidth = 100;
     constexpr int windowHeight = 30;
