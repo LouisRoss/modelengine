@@ -3,7 +3,6 @@
 mkdir ./include
 
 git clone https://github.com/LouisRoss/spiking-model-core.git
-mkdir spiking-model/include/core
 cp spiking-model-core/include/ConfigurationRepository.h include/
 cp spiking-model-core/include/IModelInitializer.h include/sdk/
 cp spiking-model-core/include/ISensorInput.h include/sdk/
