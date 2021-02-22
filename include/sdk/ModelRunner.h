@@ -10,7 +10,7 @@
 
 #include "nlohmann/json.hpp"
 
-#include "ModelEngineCommon.h"
+#include "ConfigurationRepository.h"
 #include "ModelEngine.h"
 #include "ModelInitializerProxy.h"
 
@@ -27,7 +27,7 @@ namespace embeddedpenguins::modelengine::sdk
     using std::ifstream;
     using nlohmann::json;
     using embeddedpenguins::modelengine::ModelEngine;
-    using embeddedpenguins::modelengine::ConfigurationUtilities;
+    using embeddedpenguins::core::neuron::model::ConfigurationRepository;
 
     //
     // Wrap the most common startup and teardown sequences to run a model
@@ -40,19 +40,19 @@ namespace embeddedpenguins::modelengine::sdk
     // When using the ModelRunner to run a model, it owns the model (a vector of NODETYPE),
     // the model engine object, and all configuration defined for the model.
     //
-    template<class OPERATORTYPE, class IMPLEMENTATIONTYPE, class MODELCARRIERTYPE, class RECORDTYPE>
+    template<class OPERATORTYPE, class IMPLEMENTATIONTYPE, class MODELHELPERTYPE, class RECORDTYPE>
     class ModelRunner
     {
         bool valid_ { false };
         string controlFile_ {};
 
-        ConfigurationUtilities configuration_ {};
-        unique_ptr<ModelEngine<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>> modelEngine_ {};
+        ConfigurationRepository configuration_ {};
+        unique_ptr<ModelEngine<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELHELPERTYPE, RECORDTYPE>> modelEngine_ {};
         string modelInitializerLocation_ {};
 
     public:
-        ModelEngine<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>& GetModelEngine() { return *modelEngine_.get(); }
-        const ConfigurationUtilities& ConfigurationCarrier() const { return configuration_; }
+        ModelEngine<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELHELPERTYPE, RECORDTYPE>& GetModelEngine() { return *modelEngine_.get(); }
+        const ConfigurationRepository& ConfigurationCarrier() const { return configuration_; }
         const json& Control() const { return configuration_.Control(); }
         const json& Configuration() const { return configuration_.Configuration(); }
         const json& Monitor() const { return configuration_.Monitor(); }
@@ -76,12 +76,12 @@ namespace embeddedpenguins::modelengine::sdk
         // Ensure the model is created and initialized, then start
         // it running asynchronously.
         //
-        bool Run(MODELCARRIERTYPE& carrier)
+        bool Run(MODELHELPERTYPE& helper)
         {
             if (!valid_)
                 return false;
 
-            return RunModelEngine(carrier);
+            return RunModelEngine(helper);
         }
 
         //
@@ -140,28 +140,13 @@ namespace embeddedpenguins::modelengine::sdk
             valid_ = true;
         }
 
-        bool RunModelEngine(MODELCARRIERTYPE& carrier)
+        bool RunModelEngine(MODELHELPERTYPE& helper)
         {
-            // Create the proxy with a two-step ctor-create sequence.
-            ModelInitializerProxy<OPERATORTYPE, MODELCARRIERTYPE, RECORDTYPE> initializer(modelInitializerLocation_);
-            initializer.CreateProxy(carrier, configuration_);
-
-            // Let the initializer initialize the model's static state.
-            initializer.Initialize();
-
             // Create and run the model engine.
-            auto modelTicks = configuration_.Configuration()["Model"]["ModelTicks"];
-            auto ticks { 1000 };
-            if (modelTicks.is_number_integer() || modelTicks.is_number_unsigned())
-                ticks = modelTicks.get<int>();
-
-            modelEngine_ = make_unique<ModelEngine<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>>(
-                carrier, 
-                microseconds(ticks),
+            modelEngine_ = make_unique<ModelEngine<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELHELPERTYPE, RECORDTYPE>>(
+                helper, 
                 configuration_);
 
-            modelEngine_->RecordFile(configuration_.ComposeRecordPath());
-            modelEngine_->LogFile(configuration_.ExtractRecordDirectory() + modelEngine_->LogFile());
             modelEngine_->Run();
 
             return true;

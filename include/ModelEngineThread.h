@@ -7,6 +7,8 @@
 #include <thread>
 #include <limits>
 
+#include "sdk/ModelInitializerProxy.h"
+
 #include "ModelEngineCommon.h"
 #include "ModelEngineContextOp.h"
 #include "AdaptiveWidthPartitioner.h"
@@ -31,6 +33,10 @@ namespace embeddedpenguins::modelengine
     using std::cout;
     using std::cerr;
 
+    using embeddedpenguins::core::neuron::model::Log;
+    using embeddedpenguins::core::neuron::model::Recorder;
+    using embeddedpenguins::core::neuron::model::ModelInitializerProxy;
+
     using embeddedpenguins::modelengine::threads::Worker;
     using embeddedpenguins::modelengine::threads::WorkCode;
     using embeddedpenguins::modelengine::threads::ProcessCallback;
@@ -43,31 +49,31 @@ namespace embeddedpenguins::modelengine
     // The two phases do not run simultaneously, but use synchronization barriers
     // to ensure the phases run serially.
     //
-    template<class OPERATORTYPE, class IMPLEMENTATIONTYPE, class MODELCARRIERTYPE, class RECORDTYPE>
+    template<class OPERATORTYPE, class IMPLEMENTATIONTYPE, class MODELHELPERTYPE, class RECORDTYPE>
     class ModelEngineThread
     {
         unique_ptr<IModelEngineWaiter> waiter_ { };
         unique_ptr<IModelEnginePartitioner> partitioner_ { };
 
-        ModelEngineContext<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>& context_;
-        ModelEngineContextOp<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE> contextOp_;
-        MODELCARRIERTYPE& carrier_;
+        ModelEngineContext<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELHELPERTYPE, RECORDTYPE>& context_;
+        ModelEngineContextOp<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELHELPERTYPE, RECORDTYPE> contextOp_;
+        MODELHELPERTYPE& helper_;
         IMPLEMENTATIONTYPE WorkSource_;
         ProcessCallback<OPERATORTYPE, RECORDTYPE> callback_;
 
     public:
         ModelEngineThread() = delete;
         ModelEngineThread(
-                        ModelEngineContext<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>& context, 
-                        MODELCARRIERTYPE& carrier, 
+                        ModelEngineContext<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELHELPERTYPE, RECORDTYPE>& context, 
+                        MODELHELPERTYPE& helper, 
                         unique_ptr<IModelEnginePartitioner>& partitioner, 
                         unique_ptr<IModelEngineWaiter>& waiter) :
             waiter_(std::move(waiter)),
             partitioner_(std::move(partitioner)),
             context_(context),
             contextOp_(context),
-            carrier_(carrier),
-            WorkSource_(context_.ExternalWorkSource.WorkerId, carrier_, context_.Configuration),
+            helper_(helper),
+            WorkSource_(context_.ExternalWorkSource.WorkerId, helper_, context_.Configuration),
             callback_(context_.ExternalWorkSource)
         {
             context_.Logger.SetId(0);
@@ -82,8 +88,8 @@ namespace embeddedpenguins::modelengine
 
             try
             {
-                Initialize();
-                MainLoop();
+                if (Initialize())
+                    MainLoop();
                 Cleanup();
             }
             catch(const std::exception& e)
@@ -112,12 +118,26 @@ namespace embeddedpenguins::modelengine
         }
 
     private:
-        void Initialize()
+        bool Initialize()
         {
-            contextOp_.CreateWorkers(carrier_);
+            if (!helper_.AllocateModel())
+            {
+                context_.EngineInitializeFailed = true;
+                return false;
+            }
+
+            if (!InitializeModel())
+            {
+                context_.EngineInitializeFailed = true;
+                return false;
+            }
+
+            contextOp_.CreateWorkers(helper_);
 
             context_.Iterations = 0ULL;
             context_.EngineInitialized = true;
+
+            return true;
         }
 
         void MainLoop()
@@ -167,6 +187,33 @@ namespace embeddedpenguins::modelengine
         bool WaitForWorkOrQuit()
         {
             if (waiter_) return waiter_->WaitForWorkOrQuit();
+            return true;
+        }
+
+        bool InitializeModel()
+        {
+            string modelInitializerLocation { "" };
+            const json& executionJson = context_.Configuration.Configuration()["Execution"];
+            if (!executionJson.is_null())
+            {
+                const json& initializerLocationJson = executionJson["InitializerLocation"];
+                if (initializerLocationJson.is_string())
+                    modelInitializerLocation = initializerLocationJson.get<string>();
+            }
+
+            if (modelInitializerLocation.empty())
+            {
+                cout << "No initialization location configured, cannot initialize\n";
+                return false;
+            }
+
+            // Create the proxy with a two-step ctor-create sequence.
+            ModelInitializerProxy<MODELHELPERTYPE> initializer(modelInitializerLocation);
+            initializer.CreateProxy(helper_);
+
+            // Let the initializer initialize the model's static state.
+            initializer.Initialize();
+
             return true;
         }
 

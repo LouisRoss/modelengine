@@ -5,7 +5,7 @@
 #include <string>
 #include <cstring>
 
-#include "ModelEngineCommon.h"
+#include "ConfigurationRepository.h"
 #include "ProcessCallback.h"
 
 #include "ParticleCommon.h"
@@ -22,13 +22,13 @@ namespace embeddedpenguins::particle::infrastructure
     using std::memset;
     using std::memcpy;
 
-    using embeddedpenguins::modelengine::ConfigurationUtilities;
+    using embeddedpenguins::core::neuron::model::ConfigurationRepository;
     using ::embeddedpenguins::modelengine::threads::ProcessCallback;
 
     class ParticleSupport
     {
         ParticleModelCarrier& modelCarrier_;
-        const ConfigurationUtilities& configuration_;
+        const ConfigurationRepository& configuration_;
 
         unsigned long int width_ { 100 };
         unsigned long int height_ { 100 };
@@ -37,9 +37,11 @@ namespace embeddedpenguins::particle::infrastructure
     public:
         const unsigned long int Width() const { return width_; }
         const unsigned long int Height() const { return height_; }
+        ParticleModelCarrier& Model() { return modelCarrier_; }
+        const ConfigurationRepository& Configuration() const { return configuration_ };
 
     public:
-        ParticleSupport(ParticleModelCarrier& modelCarrier, const ConfigurationUtilities& configuration) :
+        ParticleSupport(ParticleModelCarrier& modelCarrier, const ConfigurationRepository& configuration) :
             modelCarrier_(modelCarrier),
             configuration_(configuration)
         {

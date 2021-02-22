@@ -6,7 +6,7 @@
 #include "gtest/gtest.h"
 #include "gmock/gmock.h"
 
-#include "ModelEngineCommon.h"
+#include "ConfigurationRepository.h"
 #include "ModelEngine.h"
 #include "TestNode.h"
 #include "TestOperation.h"
@@ -28,7 +28,7 @@ namespace test::embeddedpenguins::modelengine::infrastructure
 
   using nlohmann::json;
 
-  using ::embeddedpenguins::modelengine::ConfigurationUtilities;
+  using ::embeddedpenguins::core::neuron::model::ConfigurationRepository;
   using ::embeddedpenguins::modelengine::ModelEngine;
 
   constexpr unsigned long long int modelSize_ = 5'000;
@@ -41,7 +41,7 @@ namespace test::embeddedpenguins::modelengine::infrastructure
     TestModelCarrier carrier_ { .Model = model_ };
     unique_ptr<ModelEngine<TestOperation, TestImplementation, TestModelCarrier, TestRecord>> modelEngine_ { };
     nanoseconds duration_ { std::chrono::nanoseconds::min() };
-    ConfigurationUtilities configuration_ {};
+    ConfigurationRepository configuration_ {};
 
     vector<TestNode>& GetModel() { return model_; }
     ModelEngine<TestOperation, TestImplementation, TestModelCarrier, TestRecord>& GetModelEngine() { return *modelEngine_; }

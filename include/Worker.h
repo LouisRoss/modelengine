@@ -2,6 +2,8 @@
 
 #include <thread>
 
+#include "ConfigurationRepository.h"
+
 #include "ModelEngineCommon.h"
 #include "WorkerContext.h"
 #include "WorkerThread.h"
@@ -13,7 +15,7 @@ namespace embeddedpenguins::modelengine::threads
     using std::unique_lock;
     using std::lock_guard;
 
-    using embeddedpenguins::modelengine::ConfigurationUtilities;
+    using embeddedpenguins::core::neuron::model::ConfigurationRepository;
 
     //
     // One worker instance is created for each hardware thread
@@ -21,7 +23,7 @@ namespace embeddedpenguins::modelengine::threads
     // The worker object uses synchronization objects in its context
     // to control its worker thread.
     //
-    template<class OPERATORTYPE, class IMPLEMENTATIONTYPE, class MODELCARRIERTYPE, class RECORDTYPE>
+    template<class OPERATORTYPE, class IMPLEMENTATIONTYPE, class MODELHELPERTYPE, class RECORDTYPE>
     class Worker
     {
         thread workerThread_;
@@ -35,8 +37,8 @@ namespace embeddedpenguins::modelengine::threads
     public:
         Worker() = delete;
 
-        Worker(MODELCARRIERTYPE& carrier, int workerId, microseconds& enginePeriod, 
-                    const ConfigurationUtilities& configuration, 
+        Worker(MODELHELPERTYPE& helper, int workerId, microseconds& enginePeriod, 
+                    const ConfigurationRepository& configuration, 
                     unsigned long long int segmentStart, unsigned long long int segmentEnd, 
                     unsigned long long int& iterations, 
                     LogLevel& loggingLevel) :
@@ -47,7 +49,7 @@ namespace embeddedpenguins::modelengine::threads
             context_.RangeBegin = segmentStart;
             context_.RangeEnd = segmentEnd;
 
-            workerThread_ = thread(IMPLEMENTATIONTYPE(workerId, carrier, configuration), std::ref(context_));
+            workerThread_ = thread(IMPLEMENTATIONTYPE(workerId, helper, configuration), std::ref(context_));
         }
 
         void Scan(WorkCode code)

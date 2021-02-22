@@ -7,7 +7,7 @@
 
 namespace embeddedpenguins::modelengine
 {
-    using Clock = std::chrono::high_resolution_clock;
+    using std::chrono::high_resolution_clock;
     using time_point = std::chrono::high_resolution_clock::time_point;
     using std::chrono::microseconds;
 
@@ -17,15 +17,15 @@ namespace embeddedpenguins::modelengine
     // a tick time, this waiter will schedule the next run in a attempt to 
     // catch up.
     //
-    template<class OPERATORTYPE, class IMPLEMENTATIONTYPE, class MODELCARRIERTYPE, class RECORDTYPE>
+    template<class OPERATORTYPE, class IMPLEMENTATIONTYPE, class MODELHELPERTYPE, class RECORDTYPE>
     class ConstantTickWaiter : public IModelEngineWaiter
     {
-        ModelEngineContext<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>& context_;
-        ModelEngineContextOp<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE> contextOp_;
+        ModelEngineContext<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELHELPERTYPE, RECORDTYPE>& context_;
+        ModelEngineContextOp<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELHELPERTYPE, RECORDTYPE> contextOp_;
         time_point nextScheduledTick_;
 
     public:
-        ConstantTickWaiter(ModelEngineContext<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>& context) :
+        ConstantTickWaiter(ModelEngineContext<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELHELPERTYPE, RECORDTYPE>& context) :
             context_(context),
             contextOp_(context),
             nextScheduledTick_(high_resolution_clock::now() + context_.EnginePeriod)

@@ -12,5 +12,6 @@ namespace embeddedpenguins::life::infrastructure
     {
         vector<LifeNode>& Model;
         unsigned long int ModelSize() { return Model.size(); }
+        bool Valid { true };
     };
 }

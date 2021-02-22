@@ -3,7 +3,7 @@
 #include <vector>
 #include <chrono>
 
-#include "ModelEngineCommon.h"
+#include "ConfigurationRepository.h"
 #include "ModelEngine.h"
 #include "sdk/ModelInitializer.h"
 
@@ -21,15 +21,21 @@ namespace embeddedpenguins::life::infrastructure
     using std::chrono::hours;
     using std::chrono::duration_cast;
 
-    using embeddedpenguins::modelengine::ConfigurationUtilities;
+    using embeddedpenguins::core::neuron::model::ConfigurationRepository;
     using embeddedpenguins::modelengine::ModelEngine;
     using embeddedpenguins::modelengine::sdk::ModelInitializer;
 
-    class ModelLifeInitializer : public ModelInitializer<LifeOperation, LifeSupport, LifeRecord>
+    class ModelLifeInitializer : public ModelInitializer<LifeSupport>
     {
     public:
-        ModelLifeInitializer(ConfigurationUtilities& configuration, LifeSupport helper) :
-            ModelInitializer<LifeOperation, LifeSupport, LifeRecord>(configuration, helper)
+        ModelLifeInitializer(LifeSupport helper) :
+            ModelInitializer<LifeSupport>(helper)
+        {
+
+        }
+
+        // Must be implemented, but not used unless implementation is a proxy.
+        virtual void CreateProxy(LifeSupport helper) override
         {
 
         }

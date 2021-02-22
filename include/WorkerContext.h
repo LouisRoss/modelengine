@@ -19,8 +19,9 @@ namespace embeddedpenguins::modelengine::threads
     using std::chrono::microseconds;
     using time_point = std::chrono::high_resolution_clock::time_point;
     using embeddedpenguins::modelengine::threads::WorkCode;
-    using embeddedpenguins::modelengine::Log;
-    using embeddedpenguins::modelengine::Recorder;
+    using embeddedpenguins::core::neuron::model::Log;
+    using embeddedpenguins::core::neuron::model::LogLevel;
+    using embeddedpenguins::core::neuron::model::Recorder;
     using embeddedpenguins::modelengine::WorkItem;
 
     enum class CurrentBufferType

@@ -32,17 +32,17 @@ namespace embeddedpenguins::modelengine
     // Each worker runs its own thread, and is allowed to write into model memory 
     // within its 'stripe', but not to memory in other 'stripes'.
     //
-    template<class OPERATORTYPE, class IMPLEMENTATIONTYPE, class MODELCARRIERTYPE, class RECORDTYPE>
+    template<class OPERATORTYPE, class IMPLEMENTATIONTYPE, class MODELHELPERTYPE, class RECORDTYPE>
     class AdaptiveWidthPartitioner : public IModelEnginePartitioner
     {
         // Expose some internal state to derived classes to allow for testing.
     protected:
-        ModelEngineContext<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>& context_;
+        ModelEngineContext<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELHELPERTYPE, RECORDTYPE>& context_;
         vector<WorkItem<OPERATORTYPE>> totalSourceWork_ {};
         vector<WorkItem<OPERATORTYPE>> workForNextTick_ {};
 
     public:
-        AdaptiveWidthPartitioner(ModelEngineContext<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>& context) :
+        AdaptiveWidthPartitioner(ModelEngineContext<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELHELPERTYPE, RECORDTYPE>& context) :
             context_(context)
         {
         }

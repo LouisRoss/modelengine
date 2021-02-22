@@ -5,7 +5,7 @@
 #include <chrono>
 #include <iostream>
 
-#include "ModelEngineCommon.h"
+#include "ConfigurationRepository.h"
 #include "WorkerThread.h"
 #include "WorkItem.h"
 #include "ProcessCallback.h"
@@ -24,11 +24,11 @@ namespace test::embeddedpenguins::modelengine::infrastructure
     using std::chrono::milliseconds;
     using time_point = std::chrono::high_resolution_clock::time_point;
 
-    using ::embeddedpenguins::modelengine::ConfigurationUtilities;
+    using ::embeddedpenguins::core::neuron::model::ConfigurationRepository;
     using ::embeddedpenguins::modelengine::threads::WorkerThread;
     using ::embeddedpenguins::modelengine::threads::ProcessCallback;
-    using ::embeddedpenguins::modelengine::Log;
-    using ::embeddedpenguins::modelengine::Recorder;
+    using ::embeddedpenguins::core::neuron::model::Log;
+    using ::embeddedpenguins::core::neuron::model::Recorder;
     using ::embeddedpenguins::modelengine::WorkItem;
 
     // Note: the callback should be allowed to be declared something like
@@ -42,7 +42,7 @@ namespace test::embeddedpenguins::modelengine::infrastructure
     {
         int workerId_;
         TestModelCarrier carrier_;
-        const ConfigurationUtilities& configuration_;
+        const ConfigurationRepository& configuration_;
         bool firstRun_ { true };
 
     public:
@@ -51,7 +51,7 @@ namespace test::embeddedpenguins::modelengine::infrastructure
         // Required constructor.
         // Allow the template library to pass in the model
         // for each worker thread that is created.
-        TestImplementation(int workerId, TestModelCarrier carrier, const ConfigurationUtilities& configuration) :
+        TestImplementation(int workerId, TestModelCarrier carrier, const ConfigurationRepository& configuration) :
             workerId_(workerId),
             carrier_(carrier),
             configuration_(configuration)

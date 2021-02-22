@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ModelEngineCommon.h"
+#include "ConfigurationRepository.h"
 #include "sdk/ModelInitializer.h"
 
 #include "ParticleOperation.h"
@@ -9,14 +9,14 @@
 
 namespace embeddedpenguins::particle::infrastructure
 {
-    using embeddedpenguins::modelengine::ConfigurationUtilities;
+    using embeddedpenguins::core::neuron::model::ConfigurationRepository;
     using embeddedpenguins::modelengine::sdk::ModelInitializer;
 
-    class ParticleModelInitializer : public ModelInitializer<ParticleOperation, ParticleSupport, ParticleRecord>
+    class ParticleModelInitializer : public ModelInitializer<ParticleSupport>
     {
     public:
-        ParticleModelInitializer(ConfigurationUtilities& configuration, ParticleSupport helper) :
-            ModelInitializer<ParticleOperation, ParticleSupport, ParticleRecord>(configuration, helper)
+        ParticleModelInitializer(ConfigurationRepository& configuration, ParticleSupport helper) :
+            ModelInitializer<ParticleSupport>(configuration, helper)
         {
         }
 

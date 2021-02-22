@@ -19,27 +19,27 @@ namespace embeddedpenguins::modelengine
     // Separate the executable code from the context carrier object so that the
     // context carrier object may be passed around without exposing methods.
     // 
-    template<class OPERATORTYPE, class IMPLEMENTATIONTYPE, class MODELCARRIERTYPE, class RECORDTYPE>
+    template<class OPERATORTYPE, class IMPLEMENTATIONTYPE, class MODELHELPERTYPE, class RECORDTYPE>
     class ModelEngineContextOp
     {
-        ModelEngineContext<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>& context_;
+        ModelEngineContext<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELHELPERTYPE, RECORDTYPE>& context_;
 
     public:
-        ModelEngineContextOp(ModelEngineContext<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>& context) :
+        ModelEngineContextOp(ModelEngineContext<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELHELPERTYPE, RECORDTYPE>& context) :
             context_(context)
         {
 
         }
 
-        void CreateWorkers(MODELCARRIERTYPE& carrier)
+        void CreateWorkers(MODELHELPERTYPE& helper)
         {
-            auto segmentSize = carrier.ModelSize() / context_.WorkerCount;
+            auto segmentSize = helper.Model().ModelSize() / context_.WorkerCount;
             long long int segmentStart { 0LL };
             for (auto id = 1; id < context_.WorkerCount; id++, segmentStart += segmentSize)
             {
                 context_.Workers.push_back(
-                    make_unique<Worker<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>>(
-                        carrier, 
+                    make_unique<Worker<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELHELPERTYPE, RECORDTYPE>>(
+                        helper, 
                         id, 
                         context_.EnginePeriod, 
                         context_.Configuration,
@@ -49,13 +49,13 @@ namespace embeddedpenguins::modelengine
                         context_.LoggingLevel));
             }
             context_.Workers.push_back(
-                make_unique<Worker<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELCARRIERTYPE, RECORDTYPE>>(
-                    carrier, 
+                make_unique<Worker<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELHELPERTYPE, RECORDTYPE>>(
+                    helper, 
                     context_.WorkerCount, 
                     context_.EnginePeriod, 
-                        context_.Configuration,
+                    context_.Configuration,
                     segmentStart, 
-                    carrier.ModelSize(),
+                    helper.Model().ModelSize(),
                     context_.Iterations,
                     context_.LoggingLevel));
 
@@ -63,7 +63,7 @@ namespace embeddedpenguins::modelengine
             context_.ExternalWorkSource.EnginePeriod = context_.EnginePeriod;
             context_.ExternalWorkSource.WorkerId = context_.WorkerCount + 1;
             context_.ExternalWorkSource.RangeBegin = 0LL;
-            context_.ExternalWorkSource.RangeEnd = carrier.ModelSize();
+            context_.ExternalWorkSource.RangeEnd = helper.Model().ModelSize();
         }
 
         void SignalQuit()

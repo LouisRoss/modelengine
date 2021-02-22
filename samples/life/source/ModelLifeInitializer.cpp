@@ -1,3 +1,5 @@
+#include "ConfigurationRepository.h"
+
 #include "ModelLifeInitializer.h"
 
 #include "LifeModelCarrier.h"
@@ -7,15 +9,17 @@
 
 namespace embeddedpenguins::life::infrastructure
 {
-    using embeddedpenguins::modelengine::sdk::IModelInitializer;
+    using embeddedpenguins::core::neuron::model::ConfigurationRepository;
+
+    using embeddedpenguins::core::neuron::model::IModelInitializer;
     
     // the class factories
 
-    extern "C" IModelInitializer<LifeOperation, LifeRecord>* create(LifeModelCarrier& carrier, ConfigurationUtilities& configuration) {
-        return new ModelLifeInitializer(configuration, LifeSupport(carrier, configuration));
+    extern "C" IModelInitializer<LifeSupport>* create(LifeSupport& helper) {
+        return new ModelLifeInitializer(helper);
     }
 
-    extern "C" void destroy(IModelInitializer<LifeOperation, LifeRecord>* p) {
+    extern "C" void destroy(IModelInitializer<LifeSupport>* p) {
         delete p;
     }
 }
