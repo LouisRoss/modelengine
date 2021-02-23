@@ -1,7 +1,7 @@
-install: ./include/ModelEngine.h
+install: ./include/ConfigurationRepository.h
 .PHONY: install
 
-./include/ModelEngine.h:
+./include/ConfigurationRepository.h:
 	./add-dependencies
 	./dockb
 
