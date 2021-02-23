@@ -14,10 +14,12 @@ samples/record/*
 !samples/record/readme.txt
 tests/source/ModelEngineTests
 include/ConfigurationRepository.h
-include/sdk/IModelInitializer.h
 include/sdk/ISensorInput.h
 include/sdk/KeyListener.h
+include/sdk/IModelInitializer.h
 include/sdk/ModelInitializerProxy.h
+include/sdk/ModelInitializer.h
 include/sdk/ModelUi.h
 include/Log.h
 include/Recorder.h
+samples/life/include/ModelLifeInitializer.h
