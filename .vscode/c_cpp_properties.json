@@ -6,7 +6,8 @@
                 "/usr/include/c++/9",
                 "${workspaceFolder}/include/**",
                 "${workspaceFolder}/include",
-                "${workspaceFolder}/samples/life/include"
+                "${workspaceFolder}/samples/life/include",
+                "${workspaceFolder}/samples/particle/include"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",
