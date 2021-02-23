@@ -2,6 +2,7 @@
     "Model":
     {
         "ModelTicks": 50000,
+        "ModelSize": 1000000,
         "Dimensions": [1000, 1000]
     },
     "Execution":

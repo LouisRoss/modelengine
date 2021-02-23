@@ -14,8 +14,8 @@ namespace embeddedpenguins::particle::infrastructure
 
     // the class factories
 
-    extern "C" IModelInitializer<ParticleSupport>* create(ParticleModelCarrier& carrier, ConfigurationRepository& configuration) {
-        return new ParticleModelInitializer(configuration, ParticleSupport(carrier, configuration));
+    extern "C" IModelInitializer<ParticleSupport>* create(ParticleSupport& helper) {
+        return new ParticleModelInitializer<ParticleSupport>(helper);
     }
 
     extern "C" void destroy(IModelInitializer<ParticleSupport>* p) {

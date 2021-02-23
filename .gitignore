@@ -23,3 +23,4 @@ include/sdk/ModelUi.h
 include/Log.h
 include/Recorder.h
 samples/life/include/ModelLifeInitializer.h
+samples/particle/include/ParticleModelInitializer.h

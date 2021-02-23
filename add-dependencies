@@ -11,6 +11,7 @@ cp spiking-model-core/include/ModelUi.h include/sdk/
 cp spiking-model-core/include/Log.h include/
 cp spiking-model-core/include/Recorder.h include/
 cp spiking-model-core/include/ModelLifeInitializer.h samples/life/include/
+cp spiking-model-core/include/ParticleModelInitializer.h samples/particle/include/
 rm -rf spiking-model-core/*
 rm -rf spiking-model-core/\.*
 rmdir spiking-model-core

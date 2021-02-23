@@ -12,5 +12,6 @@ namespace embeddedpenguins::particle::infrastructure
     {
         vector<ParticleNode>& Model;
         unsigned long int ModelSize() { return Model.size(); }
+        bool Valid { true };
     };
 }
