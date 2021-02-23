@@ -16,7 +16,7 @@ namespace embeddedpenguins::life::infrastructure
     // the class factories
 
     extern "C" IModelInitializer<LifeSupport>* create(LifeSupport& helper) {
-        return new ModelLifeInitializer(helper);
+        return new ModelLifeInitializer<LifeSupport>(helper);
     }
 
     extern "C" void destroy(IModelInitializer<LifeSupport>* p) {
