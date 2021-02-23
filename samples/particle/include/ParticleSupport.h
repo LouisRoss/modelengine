@@ -76,6 +76,24 @@ namespace embeddedpenguins::particle::infrastructure
             LoadOptionalDimensions();
         }
 
+        bool Occupied(unsigned long int index)
+        {
+            auto& particleNode = modelCarrier_.Model[index];
+            return particleNode.Occupied;
+        }
+
+        unsigned long int Occupancy()
+        {
+            return std::count_if(modelCarrier_.Model.begin(), modelCarrier_.Model.end(), 
+                [](const ParticleNode& node){ return node.Occupied; });
+        }
+
+        ParticleType Type(unsigned long int index)
+        {
+            auto& particleNode = modelCarrier_.Model[index];
+            return particleNode.Type;
+        }
+
         void InitializeCell(const string& name, unsigned long int row, unsigned long int column, int horizontalVector, int verticalVector, int mass, int speed, ParticleType type)
         {
             auto index = row * width_ + column;
