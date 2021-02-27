@@ -69,11 +69,12 @@ namespace embeddedpenguins::modelengine
     public:
         void Run()
         {
-            startTime_ = high_resolution_clock::now();
             context_.Run = true;
 
             while (!context_.EngineInitialized && !context_.EngineInitializeFailed)
                 std::this_thread::yield();
+
+            startTime_ = high_resolution_clock::now();
 
             if (context_.EngineInitializeFailed)
                 WaitForQuit();

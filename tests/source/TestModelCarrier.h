@@ -12,5 +12,6 @@ namespace test::embeddedpenguins::modelengine::infrastructure
     {
         vector<TestNode>& Model;
         unsigned long int ModelSize() { return Model.size(); }
+        bool Valid { true };
     };
 }

@@ -19,7 +19,7 @@ namespace test::embeddedpenguins::modelengine::infrastructure
 
     using ::embeddedpenguins::modelengine::threads::WorkerContext;
     using ::embeddedpenguins::modelengine::threads::ProcessCallback;
-    using ::embeddedpenguins::modelengine::LogLevel;
+    using ::embeddedpenguins::core::neuron::model::LogLevel;
 
     class WhenDoingSupportFunctions : public ::testing::Test
     {

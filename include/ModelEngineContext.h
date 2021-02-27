@@ -46,7 +46,7 @@ namespace embeddedpenguins::modelengine
         condition_variable Cv;
         mutex PartitioningMutex;
 
-        ConfigurationRepository Configuration {};
+        const ConfigurationRepository& Configuration;
         MODELHELPERTYPE& Helper;
         Log Logger {};
         LogLevel LoggingLevel { LogLevel::Status };
@@ -69,12 +69,17 @@ namespace embeddedpenguins::modelengine
             EnginePeriod(1000)
         {
             // Create and run the model engine.
-            const json& modelJson = Configuration.Configuration()["Model"];
-            if (modelJson.is_null()) return;
+            if (Configuration.Configuration().contains("Model"))
+            {
+                const json& modelJson = Configuration.Configuration()["Model"];
 
-            const json& modelTicksJson = modelJson["ModelTicks"];
-            if (modelTicksJson.is_number_integer() || modelTicksJson.is_number_unsigned())
-                EnginePeriod = microseconds(modelTicksJson.get<int>());
+                if (modelJson.contains("ModelTicks"))
+                {
+                    const json& modelTicksJson = modelJson["ModelTicks"];
+                    if (modelTicksJson.is_number_integer() || modelTicksJson.is_number_unsigned())
+                        EnginePeriod = microseconds(modelTicksJson.get<int>());
+                }
+            }
 
             RecordFile = Configuration.ComposeRecordPath();
             LogFile = Configuration.ExtractRecordDirectory() + LogFile;

@@ -13,6 +13,7 @@ tests/source/ModelEngineRecord.csv
 samples/record/*
 !samples/record/readme.txt
 tests/source/ModelEngineTests
+tests/record/*
 include/ConfigurationRepository.h
 include/sdk/ISensorInput.h
 include/sdk/KeyListener.h

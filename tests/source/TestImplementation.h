@@ -13,6 +13,7 @@
 #include "TestOperation.h"
 #include "TestNode.h"
 #include "TestModelCarrier.h"
+#include "TestHelper.h"
 #include "TestRecord.h"
 
 namespace test::embeddedpenguins::modelengine::infrastructure
@@ -41,7 +42,7 @@ namespace test::embeddedpenguins::modelengine::infrastructure
     class TestImplementation : public WorkerThread<TestOperation, TestImplementation, TestRecord>
     {
         int workerId_;
-        TestModelCarrier carrier_;
+        TestHelper& helper_;
         const ConfigurationRepository& configuration_;
         bool firstRun_ { true };
 
@@ -51,9 +52,9 @@ namespace test::embeddedpenguins::modelengine::infrastructure
         // Required constructor.
         // Allow the template library to pass in the model
         // for each worker thread that is created.
-        TestImplementation(int workerId, TestModelCarrier carrier, const ConfigurationRepository& configuration) :
+        TestImplementation(int workerId, TestHelper& helper, const ConfigurationRepository& configuration) :
             workerId_(workerId),
-            carrier_(carrier),
+            helper_(helper),
             configuration_(configuration)
         {
             
@@ -84,12 +85,12 @@ namespace test::embeddedpenguins::modelengine::infrastructure
 
             for (auto& work = begin; work != end; work++)
             {
-                carrier_.Model[work->Operator.Index].Data += workerId_;
-                log.Logger() << "(" << work->Tick << ") Index " << work->Operator.Index << " set to " << carrier_.Model[work->Operator.Index].Data << " in tick " << tickNow << '\n';
+                helper_.Model().Model[work->Operator.Index].Data += workerId_;
+                log.Logger() << "(" << work->Tick << ") Index " << work->Operator.Index << " set to " << helper_.Model().Model[work->Operator.Index].Data << " in tick " << tickNow << '\n';
                 log.Logit();
             }
 
-            auto span = carrier_.ModelSize() / 7;
+            auto span = helper_.Model().ModelSize() / 7;
             auto index = 0LL;
             for (auto _ = 6; _--; index += span)
             {
@@ -97,8 +98,8 @@ namespace test::embeddedpenguins::modelengine::infrastructure
                 log.Logger() << "Creating work for index " << index << " with tick " << tickNow + 1 << '\n';
                 log.Logit();
             }
-            callback(TestOperation(4999));
-            log.Logger() << "Creating work for index " << 4999 << " with tick " << tickNow + 1 << '\n';
+            callback(TestOperation(helper_.Model().ModelSize() - 1));
+            log.Logger() << "Creating work for index " << helper_.Model().ModelSize() - 1 << " with tick " << tickNow + 1 << '\n';
             log.Logit();
         }
     };

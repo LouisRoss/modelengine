@@ -10,7 +10,9 @@
 #include "TestImplementation.h"
 #include "TestModelCarrier.h"
 #include "TestRecord.h"
+#include "TestHelper.h"
 
+#include "TestConfigurationRepository.h"
 #include "ModelEngineContextOp.h"
 #include "AdaptiveWidthPartitioner.h"
 
@@ -23,15 +25,49 @@ namespace test::embeddedpenguins::modelengine::infrastructure
     using std::pair;
     using namespace ::embeddedpenguins::modelengine;
 
+    string TestConfigurationPartitioningWork = "\
+{\
+\"Model\":\
+{\
+\"ModelTicks\": 50000,\
+\"ModelSize\": 1000000,\
+\"Dimensions\": [1000, 1000]\
+},\
+\"Execution\":\
+{\
+\"ModelExecutable\": \"./LifeModel\",\
+\"ModelOptions\": \"\",\
+\"InitializerLocation\": \"./ModelLifeInitializer.so\"\
+},\
+\"PostProcessing\":\
+{\
+\"RecordLocation\": \"../record/\",\
+\"RecordFile\": \"ModelEngineRecord.csv\",\
+\"CleanRecordFile\": \"CleanRecord.csv\",\
+\"ImageFile\": \"spikes.png\"\
+}\
+}";
+
+  string TestControlPartitioningWork = "\
+{\
+\"Configuration\": \"life1/life.json\",\
+\"Monitor\": \"life1/center.json\"\
+}";
+
     class WhenPartitioningWork : public ::testing::Test
     {
     protected:
+        TestConfigurationRepository configuration_;
         vector<TestNode> model_ { };
         TestModelCarrier carrier_ { .Model = model_ };
-        ModelEngineContext<TestOperation, TestImplementation, TestModelCarrier, TestRecord> context_ { };
+        ModelEngineContext<TestOperation, TestImplementation, TestHelper, TestRecord> context_;
+        TestHelper helper_;
         unsigned long long int now_{};
 
-        WhenPartitioningWork()
+        WhenPartitioningWork() :
+            configuration_(TestConfigurationPartitioningWork, TestControlPartitioningWork),
+            helper_(carrier_, configuration_),
+            context_(configuration_, helper_)
         {
             context_.WorkerCount = std::thread::hardware_concurrency() - 1;
         }
@@ -51,12 +87,12 @@ namespace test::embeddedpenguins::modelengine::infrastructure
     };
 
     // Protected internal state is exposed to this derived class.
-    class TestAdaptiveWidthPartitioner : public AdaptiveWidthPartitioner<TestOperation, TestImplementation, TestModelCarrier, TestRecord>
+    class TestAdaptiveWidthPartitioner : public AdaptiveWidthPartitioner<TestOperation, TestImplementation, TestHelper, TestRecord>
     {
         unsigned long int collectedWorkForWorkers_ {};
 
     public:
-        TestAdaptiveWidthPartitioner(ModelEngineContext<TestOperation, TestImplementation, TestModelCarrier, TestRecord>& context) :
+        TestAdaptiveWidthPartitioner(ModelEngineContext<TestOperation, TestImplementation, TestHelper, TestRecord>& context) :
             AdaptiveWidthPartitioner(context)
         {
             
@@ -156,7 +192,7 @@ namespace test::embeddedpenguins::modelengine::infrastructure
     TEST_F(WhenPartitioningWork, PastWorkIsPartitionedCorrectly)
     {
         // Arrange
-        ModelEngineContextOp<TestOperation, TestImplementation, TestModelCarrier, TestRecord>(context_).CreateWorkers(carrier_);
+        ModelEngineContextOp<TestOperation, TestImplementation, TestHelper, TestRecord>(context_).CreateWorkers(helper_);
         TestAdaptiveWidthPartitioner partitioner(context_);
         partitioner.LoadWorkWithConsecutiveIndexes(std::thread::hardware_concurrency() - 1, now_ + 10);
 
@@ -172,7 +208,7 @@ namespace test::embeddedpenguins::modelengine::infrastructure
     TEST_F(WhenPartitioningWork, PastSparseWorkIsPartitionedCorrectly)
     {
         // Arrange
-        ModelEngineContextOp<TestOperation, TestImplementation, TestModelCarrier, TestRecord>(context_).CreateWorkers(carrier_);
+        ModelEngineContextOp<TestOperation, TestImplementation, TestHelper, TestRecord>(context_).CreateWorkers(helper_);
         TestAdaptiveWidthPartitioner partitioner(context_);
         partitioner.LoadWorkWithSpacedIndexes(std::thread::hardware_concurrency() - 1, now_ + 10, 1'000);
 
@@ -188,7 +224,7 @@ namespace test::embeddedpenguins::modelengine::infrastructure
     TEST_F(WhenPartitioningWork, PastSkewedWorkIsPartitionedCorrectly)
     {
         // Arrange
-        ModelEngineContextOp<TestOperation, TestImplementation, TestModelCarrier, TestRecord>(context_).CreateWorkers(carrier_);
+        ModelEngineContextOp<TestOperation, TestImplementation, TestHelper, TestRecord>(context_).CreateWorkers(helper_);
         TestAdaptiveWidthPartitioner partitioner(context_);
         partitioner.LoadWorkWithConsecutiveIndexes(std::thread::hardware_concurrency() - 1, now_ + 10);
         partitioner.AddWorkWithSameIndex(1, now_ + 10, 9);
@@ -210,7 +246,7 @@ namespace test::embeddedpenguins::modelengine::infrastructure
     TEST_F(WhenPartitioningWork, PastOddWorkIsPartitionedCorrectly)
     {
         // Arrange
-        ModelEngineContextOp<TestOperation, TestImplementation, TestModelCarrier, TestRecord>(context_).CreateWorkers(carrier_);
+        ModelEngineContextOp<TestOperation, TestImplementation, TestHelper, TestRecord>(context_).CreateWorkers(helper_);
         TestAdaptiveWidthPartitioner partitioner(context_);
         partitioner.LoadWorkWithConsecutiveIndexes(std::thread::hardware_concurrency() - 1, now_ + 10);
         partitioner.AddWorkWithSameIndex(std::thread::hardware_concurrency(), now_ + 10, 1);
@@ -296,7 +332,7 @@ namespace test::embeddedpenguins::modelengine::infrastructure
     TEST_F(WhenPartitioningWork, WorkerWorkIsAccumulatedCorrectly)
     {
         // Arrange
-        ModelEngineContextOp<TestOperation, TestImplementation, TestModelCarrier, TestRecord>(context_).CreateWorkers(carrier_);
+        ModelEngineContextOp<TestOperation, TestImplementation, TestHelper, TestRecord>(context_).CreateWorkers(helper_);
         TestAdaptiveWidthPartitioner partitioner(context_);
         for (auto& worker : context_.Workers)
             for (int i = 0; i < context_.Workers.size(); i++)
@@ -314,7 +350,7 @@ namespace test::embeddedpenguins::modelengine::infrastructure
     TEST_F(WhenPartitioningWork, WorkerWorkIsPartitionedCorrectly)
     {
         // Arrange
-        ModelEngineContextOp<TestOperation, TestImplementation, TestModelCarrier, TestRecord>(context_).CreateWorkers(carrier_);
+        ModelEngineContextOp<TestOperation, TestImplementation, TestHelper, TestRecord>(context_).CreateWorkers(helper_);
         TestAdaptiveWidthPartitioner partitioner(context_);
         for (auto& worker : context_.Workers)
             for (int i = 0; i < context_.Workers.size(); i++)
@@ -335,7 +371,7 @@ namespace test::embeddedpenguins::modelengine::infrastructure
     TEST_F(WhenPartitioningWork, DuplicateTimesAreAllowed)
     {
         // Arrange
-        ModelEngineContextOp<TestOperation, TestImplementation, TestModelCarrier, TestRecord>(context_).CreateWorkers(carrier_);
+        ModelEngineContextOp<TestOperation, TestImplementation, TestHelper, TestRecord>(context_).CreateWorkers(helper_);
         TestAdaptiveWidthPartitioner partitioner(context_);
 
         // Acting as a worker thread, use buffer 1 to insert into.

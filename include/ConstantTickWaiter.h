@@ -23,6 +23,7 @@ namespace embeddedpenguins::modelengine
         ModelEngineContext<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELHELPERTYPE, RECORDTYPE>& context_;
         ModelEngineContextOp<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELHELPERTYPE, RECORDTYPE> contextOp_;
         time_point nextScheduledTick_;
+        bool waitForFirstTick { true };
 
     public:
         ConstantTickWaiter(ModelEngineContext<OPERATORTYPE, IMPLEMENTATIONTYPE, MODELHELPERTYPE, RECORDTYPE>& context) :
@@ -35,7 +36,13 @@ namespace embeddedpenguins::modelengine
 
         virtual bool WaitForWorkOrQuit() override
         {
-            //context_.Logger.Logger() << "ConstantTickWaiter::WaitForWorkOrQuit current tick time " << Log::FormatTime(nextScheduledTick_) << "\n";
+            if (waitForFirstTick)
+            {
+                nextScheduledTick_ = high_resolution_clock::now() + context_.EnginePeriod;
+                waitForFirstTick = false;
+            }
+            
+            ///context_.Logger.Logger() << "ConstantTickWaiter::WaitForWorkOrQuit current tick time " << Log::FormatTime(nextScheduledTick_) << "\n";
             //context_.Logger.Logit();
 
             auto quit = contextOp_.WaitForWorkOrQuit(nextScheduledTick_);
