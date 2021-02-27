@@ -13,6 +13,7 @@ tests/source/ModelEngineRecord.csv
 samples/record/*
 !samples/record/readme.txt
 tests/source/ModelEngineTests
+tests/record/*
 include/ConfigurationRepository.h
 include/sdk/ISensorInput.h
 include/sdk/KeyListener.h
@@ -23,3 +24,4 @@ include/sdk/ModelUi.h
 include/Log.h
 include/Recorder.h
 samples/life/include/ModelLifeInitializer.h
+samples/particle/include/ParticleModelInitializer.h
