@@ -16,6 +16,7 @@ tests/source/ModelEngineTests
 tests/record/*
 include/ConfigurationRepository.h
 include/sdk/ISensorInput.h
+include/sdk/SensorInputProxy.h
 include/sdk/KeyListener.h
 include/sdk/IModelInitializer.h
 include/sdk/ModelInitializerProxy.h
