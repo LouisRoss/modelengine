@@ -22,6 +22,6 @@ namespace embeddedpenguins::neuron::infrastructure::persistence
         virtual ~IModelPersister() = default;
 
         virtual bool LoadConfiguration() = 0;
-        virtual bool ReadModel(MODELHELPERTYPE& helper, ConfigurationRepository& configuration) = 0;
+        virtual bool ReadModel(MODELHELPERTYPE& helper, const ConfigurationRepository& configuration) = 0;
     };
 }
