@@ -6,6 +6,7 @@
                 "/usr/include/c++/9",
                 "${workspaceFolder}/include/**",
                 "${workspaceFolder}/include",
+                "${workspaceFolder}/Initializers",
                 "${workspaceFolder}/samples/life/include",
                 "${workspaceFolder}/samples/particle/include"
             ],

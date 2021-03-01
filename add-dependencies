@@ -2,17 +2,14 @@
 
 git clone https://github.com/LouisRoss/spiking-model-core.git
 cp spiking-model-core/include/ConfigurationRepository.h include/
-cp spiking-model-core/include/Initializers/IModelInitializer.h include/sdk/
-cp spiking-model-core/include/SensorInputs/ISensorInput.h include/sdk/
 cp spiking-model-core/include/SensorInputProxy.h include/sdk/
 cp spiking-model-core/include/KeyListener.h include/sdk/
 cp spiking-model-core/include/ModelInitializerProxy.h include/sdk/
-cp spiking-model-core/include/Initializers/ModelInitializer.h include/sdk/
 cp spiking-model-core/include/ModelUi.h include/sdk/
 cp spiking-model-core/include/Log.h include/
 cp spiking-model-core/include/Recorder.h include/
-cp spiking-model-core/include/Initializers/ModelLifeInitializer.h samples/life/include/
-cp spiking-model-core/include/Initializers/ParticleModelInitializer.h samples/particle/include/
+cp -R spiking-model-core/include/Initializers ./
+cp -R spiking-model-core/include/SensorInputs ./
 rm -rf spiking-model-core/*
 rm -rf spiking-model-core/\.*
 rmdir spiking-model-core

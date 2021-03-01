@@ -15,14 +15,11 @@ samples/record/*
 tests/source/ModelEngineTests
 tests/record/*
 include/ConfigurationRepository.h
-include/sdk/ISensorInput.h
 include/sdk/SensorInputProxy.h
 include/sdk/KeyListener.h
-include/sdk/IModelInitializer.h
 include/sdk/ModelInitializerProxy.h
-include/sdk/ModelInitializer.h
 include/sdk/ModelUi.h
 include/Log.h
 include/Recorder.h
-samples/life/include/ModelLifeInitializer.h
-samples/particle/include/ParticleModelInitializer.h
+Initializers/*
+SensorInputs/*
