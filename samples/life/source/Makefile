@@ -1,5 +1,5 @@
 IDIR=../../../include
-INITDIR=../../../Initializers
+INITDIR=../../../include/Initializers
 ILDIR=../include
 CC=g++
 CFLAGS=-I$(IDIR) -I$(INITDIR) -I$(ILDIR) -pthread -fpic -std=c++17

@@ -1,5 +1,5 @@
 IDIR=../../include
-INITDIR=../../Initializers
+INITDIR=../../include/Initializers
 ILDIR=../include
 IH5DIR=/usr/include/hdf5/serial/
 CC=g++
